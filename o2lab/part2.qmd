@@ -1,0 +1,792 @@
+---
+title: "Outbreak Reconstruction - Part2"
+format:
+  html:
+    self-contained: true
+editor: visual
+knitr:
+  opts_chunk: 
+    message: false
+    warning: false
+---
+
+# Overview
+
+In the previous session, we ran the *outbreaker2* model on the data provided by the Public Health Agency of Ankh. In this session we will focus on assessing how reliable our model is and provide actionable insights for outbreak response.
+
+📁️ **Start by reloading your saved objects from the previous lab:**
+
+```{r}
+library(tidyverse)
+library(outbreaker2)
+library(epicontacts)
+
+o2data <- readRDS("data/o2data.rds")
+o2config <- readRDS("data/o2config.rds")
+epi <- readRDS("data/epi.rds")
+```
+
+# Assessing the model performance 🧮
+
+# Convergence diagnostics
+
+To assess model reliability and compare competing approaches, researchers rely on general MCMC diagnostics, applied to scalar parameter chains rather than the inferred trees themselves. These diagnostics evaluate convergence through trace plot inspection and the Gelman-Rubin statistic, assess sampling efficiency through effective sample size (ESS) calculations, and check model fit using posterior predictive checks. The `coda` R package provides functions to compute these diagnostics, a good tutorial is available on [YouTube](https://www.youtube.com/watch?v=Ldu82TAF268&ab_channel=JoshuaFrench) 📺.
+
+To assess the model's convergence, we will run multiple MCMC chains in parallel using `furrr` 📦. This may take a few minutes depending on your computer specs.
+
+```{r}
+library(furrr)
+n_cores <- future::availableCores() - 2 # Reserve 2 cores for safety
+plan(multisession, workers = n_cores)
+
+set.seed(123)
+o2list <- furrr::future_map(
+  1:10,
+  ~ outbreaker(data = o2data, config = o2config),
+  .options = furrr::furrr_options(seed = TRUE)
+)
+
+#saveRDS(o2list, "data/o2list.rds")
+```
+
+## Trace plots 📈
+
+```{r}
+o2list %>%
+  bind_rows(.id = "chain") %>%
+  select(chain, step, post, like, mu, eps, lambda) %>%
+  pivot_longer(-c(chain, step), names_to = "parameter", values_to = "value") %>%
+  # filter(step > 500) %>%
+  ggplot(aes(x = step, y = value, color = chain)) +
+  geom_line() +
+  facet_wrap( ~ parameter, scales = "free_y") +
+  labs(x = "MCMC step", y = "Parameter value") +
+  theme_classic() +
+  theme(legend.position = "none")
+```
+
+**🧠 Questions to consider:**
+
+-   How would you interpret the trace plots?
+
+-   Do the chains appear stable and well-mixed?
+
+## Gelman-Rubin statistic
+
+The Gelman-Rubin statistic, $\hat{R}$, compares the variance between chains to the variance within chains. Values close to 1 (typically \<1.1) suggest convergence.
+
+**🧠 Exercise:** Calculate the Gelman-Rubin statistic using the `coda` package.
+
+ℹ️The documentation is available [here](https://search.r-project.org/CRAN/refmans/coda/html/gelman.diag.html).
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the solution"
+library(coda)
+o2mcmc <- lapply(o2list, function(chain) {
+  as.matrix(chain[chain$step > 500, c("mu", "eps", "lambda")]) %>% 
+    coda::mcmc()
+}) %>% 
+  coda::mcmc.list()
+
+# Effective sample size
+coda::effectiveSize(o2mcmc)
+
+# Gelman-Rubin statistic
+# Values close to 1 (<1.1) indicate convergence.
+gelman_diag <- coda::gelman.diag(o2mcmc)
+gelman_diag 
+
+```
+
+**🧠 Questions to consider:**
+
+-   Has the model converged?
+
+-   Are there any parameters that need further investigation?
+
+-   What's the limitation of the above diagnostics?
+
+## *mixtree*
+
+The MCMC diagnostics above assess parameter chains rather than the inferred transmission events, while consensus trees ignore the uncertainty in who infected whom and may misrepresent key epidemiological features.
+
+Without formal statistical methods to differentiate *epidemic forests* (*i.e.* collections of transmission trees), determining whether differences between them represent meaningful variations in transmission dynamics or are due to sampling and model uncertainty is challenging. Such distinction would help validate convergence when repeated model runs produce statistically similar forests and assess whether competing inference approaches or alternative data sources yield significantly different forests.
+
+[mixtree](https://cygei.github.io/mixtree/) addresses this gap by offering a framework to statistically compare *epidemic forests* (paper in review).
+
+First we'll process `o2list` to obtain a list of *tidy* transmission trees using [`o2ools`](https://cygei.github.io/o2ools/).
+
+```{r}
+#install.packages("o2ools")
+library(o2ools)
+o2trees <- lapply(o2list, function(chain) {
+  chain %>% 
+    o2ools::identify(ids = epi$linelist$id) %>% 
+    dplyr::filter(step > 500) %>%
+    o2ools::get_trees() %>%
+    # Remove the one introduction event (NA -> XX) from each tree
+    lapply(function(tree)  dplyr::filter(tree, !is.na(from)))
+})
+str(o2trees, max.level = 1)
+```
+
+Each element of the list represents an MCMC chain, and each element within a chain represents a posterior sample of a transmission tree.
+
+Let's use `mixtree` to compare all chains with `do.call`.
+
+We can use the $\chi^2$ test:
+
+```{r}
+#install.packages("mixtree")
+library(mixtree)
+#?mixtree::tree_test
+do.call(what = mixtree::tree_test, args = c(o2trees, list(method = "chisq")))
+```
+
+Alternatively, we can use PERMANOVA ([Anderson, 2001](https://www.pelagicos.net/MARS6300/homework/hw6/Anderson_2001.pdf)). This test can take longer depending on your computer's specs. **You don't have to run the below.**
+
+```{r}
+#| eval: false
+library(parallel)
+cl <- parallel::makeCluster(8)
+do.call(what = mixtree::tree_test, args = c(o2trees, list(
+    method = "permanova",
+    test_args = list(parallel = cl) 
+  )))
+parallel::stopCluster(cl)
+```
+
+**🧠 Interpret the results.**
+
+<details>
+
+<summary>Show answer</summary>
+
+The p-values are below the significance threshold ($\alpha = 0.05$). **Both methods reject the null hypothesis** of no difference between the MCMC chains.
+
+🔍 There are **two chains** that appear problematic. Your task is to:
+
+1.  Identify these two chains.
+
+2.  Remove them and rerun `tree_test()`.
+
+⚠️ **Important note:** Removing chains is **not standard practice**. It is discouraged because: - It ignores the root cause of non-convergence - It may bias the posterior summaries
+
+✅ The recommended approach is to: - Investigate the cause of poor convergence - Re-run the model for longer - Adjust initial values or priors - Improve the MCMC proposal strategies
+
+ℹ️ Previous diagnostics indicated that the parameter $\lambda$ (`lambda`) had a Gelman-Rubin statistic \> 1.1. Inspect its trace plot to identify the divergent chains
+
+```{r}
+
+mixtree::tree_test(o2trees[[1]], 
+                   o2trees[[3]],
+                   o2trees[[4]],
+                   o2trees[[6]],
+                   o2trees[[7]],
+                   o2trees[[8]],
+                   o2trees[[9]],
+                   o2trees[[10]],
+                   method = "chisq"
+                   )
+gelman.diag(o2mcmc[-c(2, 5)])
+# Chains 2 and 5 are problematic -> you should investigate them further
+#o2trees <- o2trees[-c(2, 5)]
+```
+
+</details>
+
+🎯For the remainder of this session, we will focus on **a single chain**. To ensure reproducibility, we will use the original `o2` object saved in **Part 1**:
+
+```{r}
+# Load the MCMC output (single chain post burn-in)
+o2 <- readRDS("data/o2.rds")
+o2_id <- o2ools::identify(o2, ids = epi$linelist$id) %>% filter(step > 500)  # Remove burn-in
+```
+
+## Accuracy
+
+**Accuracy** quantifies the proportion of posterior samples where the **inferred infector matches the known infector**. In real-world settings, true infectors are rarely known. However, we could use **contact tracing data** as a proxy to evaluate performance.
+
+```{r}
+# Identify all case IDs from the contact data
+contact_ids <- unique(unlist(epi$contacts))
+
+# Compute accuracy for contact-traced cases only
+accuracy <- o2_id %>% 
+  select(ends_with(contact_ids)) %>% 
+  o2ools::get_accuracy(true_tree = epi$contact)
+
+# Plot the accuracy distribution
+hist(accuracy)
+```
+
+🧠 **Interpretation**:
+
+-   There is a strong agreement between the inferred pairs and contact-tracing pairs. Why?
+
+## Entropy
+
+**Entropy** measures the uncertainty in inferred infectors across posterior samples. It reflects how evenly the probability is distributed across all possible infectors for a given case.
+
+-   Entropy = 0: A single infector dominates the posterior (maximum certainty)
+
+-   Entropy = 1: All infectors are equally likely (maximum uncertainty)
+
+Entropy provides insight into how condifent the model is for each case's inferred ancestry, distinguishing between cases with clear inferred infectors from those with ambiguous ancestry.
+
+```{r}
+# Compute entropy for each case
+entropy <- o2ools::get_entropy(o2_id)
+names(entropy) <- gsub("alpha_", "", names(entropy))
+
+# Plot entropy (sorted)
+entropy %>% 
+  sort(decreasing = TRUE) %>%
+  barplot(
+    horiz = TRUE,
+    las = 1,
+    xlim = c(0, 1),
+    cex.names = 0.5)
+
+```
+
+🧠 **Exercise**:
+
+-   Which cases show high entropy?
+
+-   What might explain the model's uncertainty for those cases?
+
+**Try rerunning `outbreaker2` without contact tracing and review these two results again.**
+
+<details>
+<summary>Show answer</summary>
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the solution"
+o2data_no_contacts <- outbreaker2::outbreaker_data(
+  ids = o2data$ids,
+  dates = o2data$dates,
+  dna = o2data$dna,
+  w_dens = o2data$w_dens,
+  f_dens = o2data$f_dens
+)
+set.seed(0)
+o2_nocontact <- outbreaker2::outbreaker(
+  data = o2data_no_contacts,
+  config = o2config
+)
+
+# Accuracy
+o2_nocontact %>% 
+  o2ools::identify(ids = epi$linelist$id) %>% 
+  filter(step > 500) %>% 
+  o2ools::get_accuracy(true_tree = epi$contact) %>% 
+  hist(main = "Accuracy - o2 no contact")
+
+# Entropy
+o2_nocontact %>% 
+  o2ools::identify(ids = epi$linelist$id) %>% 
+  filter(step > 500) %>% 
+  o2ools::get_entropy() %>% 
+  sort(decreasing = TRUE) %>%
+  barplot(
+    horiz = TRUE,
+    las = 1,
+    xlim = c(0, 1),
+    cex.names = 0.5,
+    main = "Entropy - o2 no contact"
+  )
+
+```
+</details>
+
+# Reproduction number
+
+## $R_t$ with `EpiEstim`
+
+Recall that we can estimate the instantaneous reproduction number, $R_t$, *i.e.* is ***the average number of secondary cases that each infected individual would infect if the conditions remained as they were at time*** $t$ . For more information, read this [Cori et al's paper](https://academic.oup.com/aje/article/178/9/1505/89262) and [Gostic et al's paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC7728287/).
+
+The `EpiEstim` package estimates $R_t$ from incidence data and a given serial interval distribution. For this, we use the observed symptom onset dates and the serial interval distribution.
+
+```{r}
+library(EpiEstim)
+library(incidence)
+
+Rt <- EpiEstim::estimate_R(
+  incid = incidence::incidence(epi$linelist$onset),
+  method = "non_parametric_si",
+  config = list(si_distr = c(0, o2data$w_dens))
+)
+plot(Rt)
+```
+
+🧠 What do you interpret here? What's missing and what insights could outbreak reconstruction provide?
+
+## $R_i$ with `o2ools`
+
+Using `o2ools`, we can extract the posterior distribution of the case reproduction number, $R_i$, which is the number of secondary infections caused by each infected individual.
+
+```{r}
+Ri_mat <- o2ools::get_Ri(o2_id)
+```
+
+This yields a matrix where:
+
+-   **Rows** = posterior samples (MCMC steps)
+
+-   **Columns** = individuals
+
+-   **Values** = number of secondary infections per person
+
+We now summarise the overall distribution of $R_i$, the *offspring distribution*:
+
+```{r}
+Ri_mat %>% 
+  mutate(step = row_number()) %>% 
+  pivot_longer(-step, names_to = "name", values_to = "Ri") %>%
+  group_by(step, Ri) %>%
+  summarise(n = n(), .groups = "drop_last") %>%
+  mutate(percent = n / sum(n) * 100) %>%
+  ungroup() %>%
+  group_by(Ri) %>%
+  summarise(
+    mean = mean(percent),
+    lower = quantile(percent, 0.025),
+    upper = quantile(percent, 0.975),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = Ri, y = mean)) +
+  geom_segment(aes(x = Ri, xend = Ri, y = 0, yend = mean), colour = "grey60", linewidth = 0.5) +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
+  scale_x_continuous(breaks = 0:100)+
+  labs(x = "Number of secondary infections (Ri)",
+       y = "Mean % of cases",
+       title = "Posterior offspring distribution with 95% credible intervals")+
+  theme_classic()
+```
+
+🧠 **Interpretation**:
+
+-   What proportion of cases caused 0, 1, or more secondary infections?
+
+## Comparing $R_i$ and $R_t$ over time
+
+We can aggregate $R_i$ over weekly windows to compare with $R_t$ estimates.
+
+```{r}
+p_Ri <- Ri_mat %>%
+  mutate(step = row_number()) %>%
+  pivot_longer(-step, names_to = "id", values_to = "Ri") %>%
+  right_join(epi$linelist) %>%
+  mutate(
+    window_start = floor_date(onset, "week"),
+    window_end = window_start + days(6),
+    window_median = window_start + days(3)
+  ) %>%
+  group_by(window_median) %>%
+  summarise(
+    Ri_mean = mean(Ri, na.rm = TRUE),
+    Ri_q025 = quantile(Ri, 0.025, na.rm = TRUE),
+    Ri_q975 = quantile(Ri, 0.975, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = window_median)) +
+  geom_line(aes(y = Ri_mean)) +
+  geom_ribbon(aes(ymin = Ri_q025, ymax = Ri_q975), alpha = 0.2) +
+  geom_hline(yintercept = 1, linetype = "dotted") +
+  scale_y_continuous(limits = c(0, 15)) +
+  labs(x = "Time", y = "R_i", title = "Estimated R_i")
+
+# Plotting the results
+library(ggpubr)
+ggpubr::ggarrange(
+  plot(Rt, what = "incid") +
+    theme(legend.position = "none"),
+  plot(Rt, what = "R") +
+    labs(y = "R_t", title = "Estimated R_t") + theme(legend.position = "none"),
+  p_Ri,
+  labels = c("A", "B", "C"),
+  ncol = 1,
+  nrow = 3
+)
+```
+
+🧠 **Discussion**:
+
+-   Are $R_t$ and $R_i$ estimates consistent over time?
+
+-   Which provides more actionable insight during outbreaks?
+
+<details>
+<summary>Show answer</summary>
+
+Plots $B$ and $C$ show that both $R_t$ (from `EpiEstim`) and $R_i$ (from `outbreaker2`) decline over time, suggesting that control measures are reducing transmission.
+
+However, $R_t$ lags behind $R_i$. This is because $R_t$ estimates the transmission ***potential*** at time $t$, calculated as the incidence at time $t$ divided by the total infectiousness from past cases, weighted by the serial interval. In contrast, $R_i$ captures the ***realised*** number of secondary cases caused by individuals infected at time $t$, based on reconstructed transmission chains. As such, $R_i$ responds more immediately to changes in transmission dynamics. However, $R_i$ can only be estimated **retrospectively**, once enough time has passed to observe who each case infected ( *i.e.* after they have completed their infectious period). This limits its use for real-time monitoring.
+
+In summary, $R_t$ is useful for real-time monitoring of epidemic trends, while $R_i$ provides more detailed, retrospective insight into how transmission occurred ([see Gostic et al., 2020](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008409#:~:text=and%20performing%20analyses.-,Comparison%20of%20common%20methods,extrinsic%20factors%20have%20affected%20transmission%20at%20a%20given%20point%20in%20time.,-Download%3A)).
+
+</details>
+
+# Serial interval
+
+The serial interval (SI) is the time between the onset of symptoms in an infector-infectee pair. It is a key parameter to estimate $R_t$.
+
+We can estimate the SI empirically from the posterior distribution of the transmission trees using `o2ools`:
+
+```{r}
+# Attach onset dates to the inferred trees
+o2trees <- o2ools::get_trees(o2_id, onset = epi$linelist$onset)
+
+# Compute the serial interval distribution
+si <- o2ools::get_si(trees = o2trees, date_suffix = "onset")
+
+# Plot empirical cumulative distribution
+si %>%
+  ggplot(aes(x = x, y = mean)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  labs(x = "Serial Interval (days)", y = "Fraction of Data", title = "Empirical Cumulative Distribution of Serial Interval")
+
+# Convert to PMF and plot
+si %>%
+  mutate(pmf = c(mean[1], diff(mean))) %>%
+  ggplot(aes(x = x, y = pmf)) +
+  geom_col() +
+  labs(x = "Serial Interval (days)", y = "Probability Mass", title = "Empirical PMF of Serial Interval")
+```
+
+🧠 **Interpretation:**
+
+-   Are there negative serial intervals?
+
+-   What do these suggest about pre-symptomatic transmission?
+
+-   What are the implications for real-time $R_t$ estimation and control efforts? (see [Geismar et al., 2023](https://doi.org/10.1016/j.epidem.2023.100713))
+
+# Visualisation
+
+First we can *augment* the linelist with `outbreaker2`'s results.
+
+```{r}
+# augment linelist with summaries of t_inf
+o2linelist <- augment_linelist(
+  o2_id, epi$linelist,
+  params  = "t_inf",
+  summary_fns = list(
+    mean = function(x) mean(x, na.rm = TRUE),
+    q025  = function(x) quantile(x, .025, na.rm = TRUE),
+    q975  = function(x) quantile(x, .975, na.rm = TRUE)
+  )
+)
+```
+
+We can plot the *consensus tree*, which identifies the most frequent infector for each case across the posterior samples. This is achieved using the augmented linelist and the `epicontacts` package.
+
+```{r}
+consensus_tree <- get_consensus(o2_id) #alternative to summary(o2_id)$tree
+
+o2epi <- make_epicontacts(
+  linelist = o2linelist,
+  contacts = subset(consensus_tree, !is.na(from)),
+  #remove NA edges (i.e. imports)
+  directed = TRUE
+)
+plot(o2epi)
+#?epicontacts::vis_epicontacts
+
+```
+
+Or we can convert the tree to an `igraph`/`tidygraph` object and plot it using the `ggraph` package.
+
+```{r}
+library(igraph)
+library(tidygraph)
+library(ggraph)
+
+g <- epicontacts:::as.igraph.epicontacts(o2epi) |>
+  as_tbl_graph()
+
+layout_data <- create_layout(g, layout = 'kk')
+layout_data$x <- layout_data$onset
+sex_pal <- c("female" = "#FF8DA1", "male" = "#81b1ce")
+p <- ggraph(layout_data) +
+  geom_edge_link(
+    aes(
+      edge_width = frequency,
+      color = .N()$sex[from] # .N() to accesses node data
+    ),
+    arrow = arrow(length = unit(2.5, 'mm')),
+    end_cap = circle(3, 'mm')
+  ) +
+  geom_node_point(
+    aes(fill = sex),
+    shape = 21,
+    colour = "black",
+    size = 5
+  ) +
+  geom_node_text(
+    aes(label = id),
+    repel = TRUE,
+    size = 3,
+    nudge_y = 0.1,
+    bg.color = "white",
+    bg.r = 0.1
+  ) +
+  scale_edge_width("Posterior support",
+                   range = c(0.1, 1),
+                   breaks = c(0.8, 0.9, 1)) +
+  scale_fill_manual("", values = sex_pal) +
+  scale_edge_colour_manual("", values = sex_pal) +
+  theme_bw() +
+  labs(x = "Onset date", y = "") +
+  theme(
+    axis.line.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    legend.position = "bottom"
+  )
+p
+```
+🧠 Can you instead plot the tree using the dates of infection?
+
+# Group transmission patterns
+
+Transmission chains provide insights into the transmission patterns between different groups. The `linktree` package offers a framework for estimating group transmission assortativity ($\delta$) which quantifies the extent to which individuals are more likely to transmit within their own group compared to other groups.
+
+This analysis requires knowledge of group sizes or their relative proportions. It is also recommended to analyse transmission chains before the epidemic peak (*i.e.* before saturation).
+
+ℹ️For more details, read the paper: [Sorting out assortativity: When can we assess the contributions of different population groups to epidemic transmission?](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0313037)
+
+📰 News outlets and social media accounts speculated that the outbreak may be driven by men who have sex with men (MSM). Public Health Morporkia has requested an investigation into whether there is evidence of atypical sexual transmission patterns.
+
+## Estimate the peak date
+
+First we estimate the epidemic peak date with the `incidence2` package.
+
+```{r}
+library(incidence2)
+
+incid <- incidence2::incidence(epi$linelist,
+                               date_index = "onset",
+                               groups = "sex")
+
+peak <- incidence2::estimate_peak(incidence2::regroup(incid))$observed_peak
+
+incid %>% filter(date_index <= peak) %>% 
+    plot(show_cases = TRUE,angle = 45,fill = "sex")+ scale_fill_manual(values = sex_pal)
+```
+
+Then we truncate the transmission trees to analyses transmissions prior to the epidemic peak.
+
+```{r}
+o2trees <- get_trees(
+  o2_id,
+  sex = epi$linelist$sex, #add sex info
+  onset = epi$linelist$onset
+)
+
+o2trunc_trees <- lapply(o2trees, function(tree) {
+  tree |> filter(from_onset <= peak, to_onset <= peak)
+})
+```
+
+## Estimate assortativity
+
+To run the below you need to install `linktree` from [GitHub](https://github.com/CyGei/linktree).
+
+We can estimate the groups’ transmission assortativity coefficients ($\delta$) for any tree. Let's estimate $\delta$ on the maximum posterior tree:
+
+```{r}
+library(linktree)
+sex_ratio <- c("male" = 0.5, "female" = 0.5)
+
+# The tree with the highest posterior probability
+max_post <- o2trunc_trees[[which.max(o2_id$post)]]
+delta <- linktree::get_delta(from = max_post$from_sex, to = max_post$to_sex, f = sex_ratio)
+plot(delta)
+```
+
+**🧠 Interpret the results. What are we not accounting for?**
+
+<details>
+
+<summary>Show answer</summary>
+
+We estimated $\delta$ for males and females using the maximum posterior transmission tree. For each groups, the mean estimate is close to 0, and the 95% CI includes 0, suggesting random transmission between groups.
+
+However, this approach is based on a single transmission tree and does not account for uncertainty in who infected whom. To incorporate this uncertainty, we estimate $\delta$ for each tree in the posterior sample, thereby obtaining a **posterior distribution of assortativity coefficients**.
+
+
+```{r}
+deltas <- lapply(o2trunc_trees, function(x) {
+  linktree::get_delta(
+    from = x$from_sex,
+    to = x$to_sex,
+    f = sex_ratio
+  )
+}) |>
+  bind_rows(.id = "tree")
+```
+</details>
+
+**🧠 Can you plot the results? What's your conclusion about sexual transmission patterns?**
+
+<details>
+
+<summary>Show answer</summary>
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the solution"
+
+# Using errorbars we can show the posterior mean and 95% CrI of delta
+delta <- deltas %>% group_by(group) %>%
+  summarise(
+    mean = mean(est),
+    q025 = quantile(est, 0.025),
+    q975 = quantile(est, 0.975),
+    .groups = "drop"
+  )
+ggplot(delta, aes(x = group, y = mean)) +
+  geom_errorbar(aes(ymin = q025, ymax = q975), width = 0.2)+
+  geom_point(size = 3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black")+
+  labs(x = "group", y = "delta") +
+  scale_y_continuous(limits = c(-1, 1), breaks = seq(-1, 1, 0.25))+
+  theme_classic()
+
+
+# We could also plot the posterior distributions
+ggplot(deltas) +
+  geom_density(aes(x = est, fill = group), alpha = 0.8, color = "white") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             color = "black") +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, 0.25)) +
+  scale_fill_manual(values = sex_pal) +
+  theme_classic() +
+  theme(legend.position = c(0.1, 0.85)) +
+  annotate("label",
+           x = -0.5,
+           y = -0.3,
+           label = "disassortative",
+  ) +
+  annotate("label",
+           x =  0.0,
+           y = -0.3,
+           label = "random") +
+  annotate("label",
+           x =  0.5,
+           y = -0.3,
+           label = "assortative")
+
+```
+
+Both groups tend to be **disassortative**, meaning they are more likely to transmit to individuals from the other group than within their own. However, the estimated values are small, suggesting limited impact on overall transmission dynamics. For males, the 95% credible interval (CrI) crosses 0, indicating that this effect is **not statistically significant**. These results do not support the claim that the outbreak is driven by MSM transmission.
+
+</details>
+
+**🧠 Exercise:**
+
+Although sexual transmission patterns have been ruled out, Public Health Morporkia has reviewed your previous contact tracing analysis. The `epicontacts` plot suggests possible age-related transmission patterns. Ank is a very young city, with **70% of the population under the age of 21**.
+
+Using the same workflow as above, what can you conclude about transmission patterns by age?
+
+<details>
+
+<summary>Show answer</summary>
+
+First, we must create an **age group** variable in the linelist and update our transmission trees with that information:
+
+```{r}
+epi$linelist <- epi$linelist %>% 
+  mutate(ageg = ifelse(age <= 21, "<=21", ">21"))
+
+o2trees <- get_trees(
+  o2_id,
+  ageg = epi$linelist$ageg,
+  onset = epi$linelist$onset
+)
+
+o2trunc_trees <- lapply(o2trees, function(tree) {
+  tree |> filter(from_onset <= peak, to_onset <= peak)
+})
+```
+
+Then, we estimate the **posterior distribution of $\delta$** using the information on Ank's age demographics:
+
+```{r}
+ageg_ratio <- c("<=21"= 0.7, ">21" = 0.3)
+deltas <- lapply(o2trunc_trees, function(x) {
+  linktree::get_delta(
+    from = x$from_ageg,
+    to = x$to_ageg,
+    f = ageg_ratio
+  )
+}) |>
+  bind_rows(.id = "tree")
+
+
+ageg_pal <- c("<=21"= "orange", ">21" = "purple")
+ggplot(deltas) +
+  geom_density(aes(x = est, fill = group), alpha = 0.8, color = "white") +
+  geom_vline(aes(xintercept = 0),
+             linetype = "dashed",
+             color = "black") +
+  scale_x_continuous(limits = c(-1, 1), breaks = seq(-1, 1, 0.25)) +
+  scale_fill_manual(values = ageg_pal) +
+  theme_classic() +
+  theme(legend.position = c(0.1, 0.85)) +
+  annotate("label",
+           x = -0.5,
+           y = -0.3,
+           label = "disassortative",
+  ) +
+  annotate("label",
+           x =  0.0,
+           y = -0.3,
+           label = "random") +
+  annotate("label",
+           x =  0.5,
+           y = -0.3,
+           label = "assortative")
+
+```
+
+**🧠 Interpret the results. We have limited vaccines, whom should we target?**
+
+We can facilitate interpretation by converting $\delta$ estimates to $\gamma$ values.
+
+```{r}
+
+gamma <- deltas %>% 
+  group_by(group) %>%
+  summarise(
+    mean = mean(est),
+    q025 = quantile(est, 0.025),
+    q975 = quantile(est, 0.975),
+    .groups = "drop"
+  ) %>% mutate(across(.cols = -group , .fns = \(x) linktree::delta2gamma(x)))
+
+ggplot(gamma, aes(x = group, y = mean)) +
+  geom_errorbar(aes(ymin = q025, ymax = q975), width = 0.2)+
+  geom_point(size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "black")+
+  labs(x = "group", y = "gamma") +
+  scale_y_continuous(limits = c(0, 5))+
+  theme_classic()
+
+```
+
+The transmission patterns suggest that individuals aged 21 or below **transmit randomly**, while those aged 21 or above are **3 times more likely to transmit within their own age group** ($\gamma$ 95% CrI: 2.49–3.41). This indicates that prioritising vaccination for adults (21+) could effectively break transmission chains within this group. However, if the overall contribution to the outbreak ($R_{adults}$) of the adult group is small, focusing solely on them may not have a substantial impact on reducing the overall spread.
+
+In designing a vaccination strategy, several other factors must be considered. These include the **vaccine's efficacy** across different age groups, the logistics of **vaccine distribution**, and ensuring high compliance and uptake. Ethical considerations, such as prioritising **vulnerable populations** who are at higher risk of severe disease and death or those critical for **maintaining healthcare capacity** and essential services, are also important.
+
+</details>

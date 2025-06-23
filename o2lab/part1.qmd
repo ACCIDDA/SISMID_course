@@ -1,0 +1,453 @@
+---
+title: "Outbreak Reconstruction - Part1"
+format:
+  html:
+    self-contained: true
+editor: visual
+knitr:
+  opts_chunk: 
+    message: false
+    warning: false
+---
+
+# Overview
+
+In the later stages of an outbreak, public health authorities often collect detailed case-level data, including contact tracing records, laboratory results, and pathogen genome sequences. Reconstructing transmission chains (*i.e.* inferring who infected whom) can help identify introduction and superspreading events, and improve our understanding of transmission dynamics to inform targeted interventions.
+
+This module introduces the core concepts of contact tracing analysis and outbreak reconstruction, and demonstrates their implementation using R. The focus is on tools from the [RECON](https://www.repidemicsconsortium.org/) ecosystem:
+
+-   **`outbreaker2`**: A Bayesian framework for probabilistic reconstruction of transmission chains from epidemiological and genetic data.
+
+-   **`epicontacts`**: A package for storing, manipulating, and visualising linelist and contact tracing data.
+
+We will work with a fictional dataset from an Ebola outbreak in the city of Ankh, Republic of Morporkia. The outbreak begins with a case reported on 10 October 2017 (see [reconlearn practical](https://www.reconlearn.org/post/practical-ebola-reconstruction)).
+
+# Outbreak data
+
+Public health authorities have collected contact tracing and epidemiological data up to 25 November 2017. The data includes:
+
+-   **`PHM-EVD-linelist-2017-11-25.xlsx`**: A linelist of reported cases.\
+    📁[Download the file here](https://www.reconlearn.org/data/PHM-EVD-linelist-2017-11-25.xlsx) and place it in a `data/` folder.
+
+-   **`PHM-EVD-contacts-2017-11-25.xlsx`**: A contact tracing dataset containing information on reported contacts between cases.\
+    📁 [Download the file here](https://www.reconlearn.org/data/PHM-EVD-contacts-2017-11-25.xlsx) and place it in the same `data/` folder.
+
+## Data preparation 🛠️
+
+```{r}
+#install.packages("tidyverse") # includes dplyr, ggplot2, tidyr
+library(tidyverse)
+#install.packages("readxl")
+library(readxl)
+
+# Load the linelist
+linelist <- read_excel("data/PHM-EVD-linelist-2017-11-25.xlsx")
+# Load the contacts
+contacts <- read_excel("data/PHM-EVD-contacts-2017-11-25.xlsx")
+```
+
+Both datasets are now loaded in your environment. You can check the structure of the datasets using the `str()` function to understand their contents and format.
+
+```{r}
+str(linelist)
+# convert to basic date format
+linelist$onset <- as.Date(linelist$onset)
+str(contacts)
+```
+
+[epicontacts](https://www.repidemicsconsortium.org/epicontacts/) is a package that provides tools for processing outbreak data, specifically the linelist and contacts.
+
+```{r}
+#install.packages("epicontacts")
+library(epicontacts)
+# Create an epicontacts object from the linelist and contacts
+epi  <- make_epicontacts(linelist = linelist,
+                         contacts = contacts,
+                         directed = TRUE)
+
+epi
+```
+
+## Visualisation
+
+```{r}
+plot(epi)
+```
+
+If the plots do not render dynamically, try to download the `.html` file and open it in a web browser. Click on `Viewer > Export > Save as Web Page` to save the interactive plot.
+
+This is the default plot of the contact network. You can customise it using additional arguments in the `plot()` function. For full details, see `?vis_epicontacts`.
+
+Can you produce a more informative plot? Try to colour nodes by attribute (e.g. sex or age).
+
+🧠 **Exercise:**
+
+-   What does the contact network suggest about potential transmission in this outbreak?
+
+-   Are there any highly connected individuals?
+
+-   Do you notice clusters, isolated cases, or possible super-spreaders?
+
+-   Use the visualisation to explore these patterns in the data.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Click to reveal the solution"
+
+epi$linelist$value <- epi$linelist$age
+
+p_epi <- vis_epicontacts(
+  x = epi,
+  thin = FALSE, #show all nodes
+  label = "id",
+  #node_shape = "sex",
+  #shapes = c(male = "male", female = "female"), # https://fontawesome.com/v4/icons/
+  node_color = "sex",
+  edge_arrow = "to",
+  col_pal = \(n) c("#FF8DA1", "#81b1ce")
+) 
+
+# remove the value column from the linelist
+epi$linelist <- subset(epi$linelist, select = -value)
+p_epi
+```
+
+## Genetic data 🧬
+
+Genetic sequencing has been performed on samples from reported cases. The resulting data are stored in FASTA format, a standard text-based format for representing nucleotide sequences.
+
+Sequence data are generated through DNA or RNA sequencing, which determines the order of nucleotides (A, T, C, G) in each sample. Sequences are typically aligned to a reference genome, providing a common coordinate system to compare genetic variation between samples.
+
+Laboratories usually produce a consensus sequence for each sample, representing the most frequent nucleotide at each position across all sequencing reads.
+
+📁 **Download the data:**\
+You can download the FASTA file [here](https://www.reconlearn.org/data/PHM-EVD-WGS.fa) and save it in the `data/` folder. This file contains the consensus sequences collected during the outbreak.
+
+```{r}
+#install.packages("ape")
+library(ape)
+dna <- read.dna("data/PHM-EVD-WGS.fa", format = "fasta")
+dna
+```
+
+🧠 **Questions to consider:**
+
+-   How many sequences are included in the dataset?
+
+-   Are all sequences the same length (i.e. fully aligned)?
+
+-   Do the sequence IDs match the case IDs in the linelist?
+
+```{r}
+#| code-fold: true
+#| code-summary: "Click to reveal the solution"
+str(dna)
+identical(labels(dna), linelist$case_id) # check sequences match linelist data
+```
+
+As a first exploration of the genetic data, we construct a **Neighbour-Joining (NJ)** tree 🌳rooted at the earliest case in the outbreak:
+
+```{r}
+nj <- nj(dist.dna(dna, model = "N")) # NJ on nucleotide distances (model = "N")
+nj <- root(nj, 1) # Rooted at the first case
+plot(nj, main = "Neighbour-Joining tree")
+axisPhylo()
+```
+
+This tree clusters cases by their **overall genetic similarity**, illustrating how the virus has evolved during the outbreak. Each tip represents a case, and branch lengths correspond to the number of nucleotide differences between sequences: shorter branches imply more closely related cases.
+
+The tree is rooted at the earliest sampled case, providing a sense of directionality and allowing us to observe how other cases have genetically diverged from this initial reference point.
+
+⚠️ **Important:** This is **not** a transmission tree. While this tree reveals clusters of genetically similar cases, it does not represent who infected whom, as it is based solely on genetic distances rather than a model of transmission.
+
+🧠 **Discuss:**
+
+1.  What factors might cause a true transmission pair to have genetically dissimilar viruses?
+
+2.  What factors could cause genetically similar viruses to appear in cases that are NOT directly linked by transmission?
+
+3.  Does placing the root at the "earliest case" mean this was necessarily the index case of the outbreak?
+
+4.  If you see cases clustering together genetically, what additional information would you need to confirm they represent a transmission chain?
+
+<details>
+
+<summary>Click to reveal the answers</summary>
+
+1. Within-host viral evolution over time, weak transmission bottlenecks (allowing multiple viral variants to be transmitted), or multiple infection events (co-infection or superinfection) can lead to genetically dissimilar viruses between an infector and its infectee.
+
+2.  Common source exposure (*i.e.* same infector), or limited viral evolution between transmission events can result in genetically similar viruses in cases that are not directly linked.
+
+3.  **No** - `earliest case' refers to earliest *sampled*, not necessarily first infected. The true index case might not have been detected, sequenced, or may have been sampled later.
+
+4.  **Epidemiological data**: contact tracing, symptom onset dates, geographic proximity etc. is essential to distinguish genetic clustering from actual transmission chains.
+
+</details>
+
+# Outbreak reconstruction 🔍
+
+The [outbreaker2](https://www.repidemicsconsortium.org/outbreaker2/) package provides a Bayesian framework to infer who infected whom by integrating epidemiological, contact and genetic data.
+
+🧠 **Key reading:**
+
+-   The original model combining epidemiological and genetic data: [Jombart et al., 2014](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1003457)
+
+-   Extension incorporating contact tracing data: [Campbell et al., 2019](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1006930)
+
+-   Software implementation and interface: [Campbell et al., 2018](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-018-2330-z)
+
+How does each type of data (genetic, temporal, and contact) inform the reconstruction of transmission chains? What are the advantages of combining them?
+
+## Delay distributions ⏳
+
+### Disease parameters
+
+To reconstruct the outbreak, `outbreaker2` requires **delay distributions** that characterise how infection and symptom onset times relate across cases. Based on the methodology described in the papers above and the data available in this practical:
+
+🔎 **Which delay distributions are needed? Why?**
+
+<details>
+
+<summary>Click to reveal the answer</summary>
+
+-   **Incubation period** is used to infer infection dates.
+
+-   **Generation time** is used to infer the most likely transmission pairs based on their times of infection.
+
+<details>
+
+For **Ebola**, search the literature to identify estimates of the generation time and incubation period. You can also explore two R packages that provide curated epidemiological parameters:
+
+-   [`epireview`](https://github.com/mrc-ide/epireview): Imperial College London’s ([Pathogen Epidemiology Review Group](https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/related-initiatives/perg/)) package to review published estimates
+
+-   `epiparameter`: Part of LSHTM’s [Epiverse initiative](https://data.org/initiatives/epiverse/), offering access to standardised disease parameters
+
+#### Generation time
+
+The generation time is the time between the times of infection in an infector-infectee pair. In practice, the serial interval is used as a proxy for the generation time as they typically have the same mean although they have different variances ([Svensson, 2007](https://doi.org/10.1016/j.mbs.2006.10.010)).
+
+```{r}
+#remotes::install_github('mrc-ide/epireview')
+library(epireview)
+ebola <- epireview::load_epidata("ebola")
+
+forest_plot_serial_interval(ebola[["params"]])
+# mu ~ 11.5 days, sd ~ 7 days
+gt <- tibble(mean = 11.5, sd = 7, cv = sd/mean)
+```
+
+#### Incubation period
+
+The incubation period is the time between infection and the onset of symptoms.
+
+```{r}
+#remotes::install_github("epiverse-trace/epiparameter")
+library(epiparameter)
+
+incub <- epiparameter_db(
+  disease = "ebola",
+  epi_name = "incubation period"
+)
+
+incub <- lapply(incub, function(x){
+  x[["summary_stats"]]
+}) %>% bind_rows() %>% 
+  mutate(
+    cv = sd / mean
+  ) %>% 
+  summarise(
+    mean = mean(mean),
+    sd = mean(sd),
+    cv = mean(cv) #coefficient of variation
+  )
+```
+
+### Discretisation
+
+The [distcrete](https://github.com/reconhub/distcrete) package allows us to construct discrete delay distributions. These delays are often based on gamma distributions, which are continuous by nature but can be discretised to estimate the probability of a delay falling within specific time intervals. We use [epitrix](https://www.repidemicsconsortium.org/epitrix/) to convert the mean and coefficient of variation (CV) of the delay distribution into shape and scale parameters for the gamma distribution.
+
+```{r}
+#remotes::install_github("reconhub/distcrete")
+library(distcrete)
+library(epitrix)
+
+# Incubation period params
+incub <- epitrix::gamma_mucv2shapescale(
+  mu = incub$mean,
+  cv = incub$cv
+)
+# Serial interval params
+gt <- epitrix::gamma_mucv2shapescale(
+  mu = gt$mean,
+  cv = gt$cv
+)
+
+
+dist_incub <- distcrete::distcrete(
+    "gamma",
+    shape = incub$shape,
+    scale = incub$scale,
+    w = 0.5,
+    interval = 1
+  )
+
+dist_gt <- distcrete::distcrete(
+    "gamma",
+    shape = gt$shape,
+    scale = gt$scale,
+    w = 0.5,
+    interval = 1
+  )
+
+```
+
+This gives you a vector of probabilities that can be passed directly to `outbreaker2`.
+
+```{r}
+tibble(
+  x = 1:50
+) %>% 
+  mutate(
+    incubation = dist_incub$d(x),
+    generation_time = dist_gt$d(x)
+  ) %>% 
+  ggplot(aes(x = x)) +
+  geom_bar(aes(y = incubation, fill = "incubation"), stat = "identity", alpha = 0.5) +
+  geom_bar(aes(y = generation_time, fill = "generation time"), stat = "identity", alpha = 0.5) +
+  labs(
+    x = "days",
+    y = "probability mass",
+    fill = "distribution"
+  ) 
+```
+
+## `outbreaker2` 📦
+
+### `outbreaker_data()` 💾
+
+The first step is to build an `outbreaker_data` object, which gathers all the data used by the model *i.e.* **onset dates**, **genetic sequences**, **contact tracing information**, and **delay distributions**.
+
+```{r}
+library(outbreaker2)
+
+o2data <- outbreaker2::outbreaker_data(
+  dates = epi$linelist$onset,
+  dna = dna,
+  ctd = epi,
+  w_dens = dist_gt$d(1:100),
+  f_dens = dist_incub$d(1:100)
+)
+```
+
+ℹ️ For full documentation, run `?outbreaker2::outbreaker_data`.
+
+### `create_config()`⚙️
+
+Next, use `create_config()` to define the model settings. This object specifies which parameters are to be estimated, their initial values, MCMC settings (e.g. number of iterations), and other modelling assumptions.
+
+Here, we start with a **basic configuration** that:
+
+-   Assumes a **single importation** (`find_import = FALSE`)
+
+-   Sets the **reporting probability (π)** to 1 (*i.e.* all cases are observed)
+
+-   Fixes the number of generations between linked cases (**κ = 1**)
+
+```{r}
+o2config <- create_config(move_kappa = FALSE, # don't look for missing cases
+                        move_pi = FALSE, # don't estimate reporting
+                        init_pi = 1, # set reporting to 1
+                        find_import = FALSE, # don't look for additional imported cases
+                        init_tree = "star" # star-like tree as starting point
+                        )
+```
+
+ℹ️ For all available settings, see `?outbreaker2::create_config`.
+
+### Additional customisations ⚙️
+
+The `outbreaker2` package is highly customisable. Advanced users can define custom:
+
+-   **Priors**
+
+-   **Likelihoods**
+
+-   **Proposal moves** (for MCMC parameter updates)
+
+ℹ️ There is a dedicated vignette on this topic, see `vignette("outbreaker2_custom")`.
+
+### `outbreaker()` 🖥️
+
+The `outbreaker()` function runs the outbreak reconstruction model. It takes the `outbreaker_data` and `create_config` objects as input. The output is an `outbreaker_chains` object that contains the results of the reconstruction.
+
+```{r}
+set.seed(0)
+o2 <- outbreaker(data = o2data, 
+                 config = o2config)
+o2
+```
+
+🧠 Check the MCMC trace plots. Can you plot traces for the parameters? How do you interpret these plots? (see `?plot.outbreaker_chains`)
+
+```{r}
+#| code-fold: true
+#| code-summary: "Reveal the solution"
+plot(o2)
+plot(o2,  type = "alpha", burnin = 500)
+plot(o2,  type = "t_inf", burnin = 500) # infection dates
+plot(o2,  type = "network", burnin = 500, min_support = .05)
+```
+
+🧠 How would you interpret the results? Can you run the same code without contact data and another instance without genetic data so assess how that affects your results? What if you want to consider multiple importations?
+
+```{r}
+#| code-fold: true
+#| code-summary: "Reveal the solution"
+o2data_nocontact <- outbreaker2::outbreaker_data(
+  ids = epi$linelist$id,
+  dates = epi$linelist$onset,
+  dna = dna,
+  w_dens = dist_gt$d(1:100),
+  f_dens = dist_incub$d(1:100)
+)
+
+o2data_nogen <- outbreaker_data(
+  ids = epi$linelist$id,
+  dates = epi$linelist$onset,
+  ctd = epi,
+  w_dens = dist_gt$d(1:100),
+  f_dens = dist_incub$d(1:100)
+)
+
+o2config_multi_import <- create_config(
+  find_import = TRUE,
+  outlier_threshold = 2, # threshold for outlier detection (see Global Influence in Jombart et al., 2014)
+  init_pi = 1,
+  init_kappa = 1
+)
+
+```
+
+You can then rerun `outbreaker()` and compare outputs.
+
+💾 **Save your work**
+
+Make sure to store the following objects in the `data/` folder for future use:
+
+-   `epi`: the epicontacts object containing the linelist and contacts.
+
+-   `o2data`: the outbreaker_data object.
+
+-   `o2config`: the configuration for the outbreaker2 model.
+
+-   `o2` : the output of the outbreaker2 model.
+
+```{r}
+#| eval = FALSE
+saveRDS(epi, "data/epi.rds")
+saveRDS(o2data, "data/o2data.rds")
+saveRDS(o2config, "data/o2config.rds")
+saveRDS(o2, "data/o2.rds")
+```
+
+You can now proceed to the next part of the module, where we will explore how assess the performance of the model, interpret and visualise the results of the outbreak reconstruction to inform public health strategies.
