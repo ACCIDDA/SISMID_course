@@ -260,6 +260,7 @@ entropy %>%
 **Try rerunning `outbreaker2` without contact tracing and review these two results again.**
 
 <details>
+
 <summary>Show answer</summary>
 
 ```{r}
@@ -300,6 +301,7 @@ o2_nocontact %>%
   )
 
 ```
+
 </details>
 
 # Reproduction number
@@ -421,6 +423,7 @@ ggpubr::ggarrange(
 -   Which provides more actionable insight during outbreaks?
 
 <details>
+
 <summary>Show answer</summary>
 
 Plots $B$ and $C$ show that both $R_t$ (from `EpiEstim`) and $R_i$ (from `outbreaker2`) decline over time, suggesting that control measures are reducing transmission.
@@ -554,6 +557,7 @@ p <- ggraph(layout_data) +
   )
 p
 ```
+
 🧠 Can you instead plot the tree using the dates of infection?
 
 # Group transmission patterns
@@ -601,7 +605,7 @@ o2trunc_trees <- lapply(o2trees, function(tree) {
 
 To run the below you need to install `linktree` from [GitHub](https://github.com/CyGei/linktree).
 
-We can estimate the groups’ transmission assortativity coefficients ($\delta$) for any tree. Let's estimate $\delta$ on the maximum posterior tree:
+We can estimate the groups' transmission assortativity coefficients ($\delta$) for any tree. Let's estimate $\delta$ on the maximum posterior tree:
 
 ```{r}
 library(linktree)
@@ -623,7 +627,6 @@ We estimated $\delta$ for males and females using the maximum posterior transmis
 
 However, this approach is based on a single transmission tree and does not account for uncertainty in who infected whom. To incorporate this uncertainty, we estimate $\delta$ for each tree in the posterior sample, thereby obtaining a **posterior distribution of assortativity coefficients**.
 
-
 ```{r}
 deltas <- lapply(o2trunc_trees, function(x) {
   linktree::get_delta(
@@ -634,6 +637,7 @@ deltas <- lapply(o2trunc_trees, function(x) {
 }) |>
   bind_rows(.id = "tree")
 ```
+
 </details>
 
 **🧠 Can you plot the results? What's your conclusion about sexual transmission patterns?**
@@ -720,7 +724,7 @@ o2trunc_trees <- lapply(o2trees, function(tree) {
 })
 ```
 
-Then, we estimate the **posterior distribution of $\delta$** using the information on Ank's age demographics:
+Then, we estimate the **posterior distribution of** $\delta$ using the information on Ank's age demographics:
 
 ```{r}
 ageg_ratio <- c("<=21"= 0.7, ">21" = 0.3)
@@ -785,7 +789,7 @@ ggplot(gamma, aes(x = group, y = mean)) +
 
 ```
 
-The transmission patterns suggest that individuals aged 21 or below **transmit randomly**, while those aged 21 or above are **3 times more likely to transmit within their own age group** ($\gamma$ 95% CrI: 2.49–3.41). This indicates that prioritising vaccination for adults (21+) could effectively break transmission chains within this group. However, if the overall contribution to the outbreak ($R_{adults}$) of the adult group is small, focusing solely on them may not have a substantial impact on reducing the overall spread.
+The transmission patterns suggest that individuals aged 21 or below **transmit randomly**, while those aged 21 or above are **3 times more likely to transmit within their own age group** ($\gamma$ 95% CrI: 2.49--3.41). This indicates that prioritising vaccination for adults (21+) could effectively break transmission chains within this group. However, if the overall contribution to the outbreak ($R_{adults}$) of the adult group is small, focusing solely on them may not have a substantial impact on reducing the overall spread.
 
 In designing a vaccination strategy, several other factors must be considered. These include the **vaccine's efficacy** across different age groups, the logistics of **vaccine distribution**, and ensuring high compliance and uptake. Ethical considerations, such as prioritising **vulnerable populations** who are at higher risk of severe disease and death or those critical for **maintaining healthcare capacity** and essential services, are also important.
 

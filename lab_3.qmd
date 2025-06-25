@@ -174,11 +174,11 @@ The tree is rooted at the earliest sampled case, providing a sense of directiona
 
 <summary>Click to reveal the answers</summary>
 
-1. Within-host viral evolution over time, weak transmission bottlenecks (allowing multiple viral variants to be transmitted), or multiple infection events (co-infection or superinfection) can lead to genetically dissimilar viruses between an infector and its infectee.
+1.  Within-host viral evolution over time, weak transmission bottlenecks (allowing multiple viral variants to be transmitted), or multiple infection events (co-infection or superinfection) can lead to genetically dissimilar viruses between an infector and its infectee.
 
 2.  Common source exposure (*i.e.* same infector), or limited viral evolution between transmission events can result in genetically similar viruses in cases that are not directly linked.
 
-3.  **No** - `earliest case' refers to earliest *sampled*, not necessarily first infected. The true index case might not have been detected, sequenced, or may have been sampled later.
+3.  **No** - \`earliest case' refers to earliest *sampled*, not necessarily first infected. The true index case might not have been detected, sequenced, or may have been sampled later.
 
 4.  **Epidemiological data**: contact tracing, symptom onset dates, geographic proximity etc. is essential to distinguish genetic clustering from actual transmission chains.
 
@@ -218,9 +218,9 @@ To reconstruct the outbreak, `outbreaker2` requires **delay distributions** that
 
 For **Ebola**, search the literature to identify estimates of the generation time and incubation period. You can also explore two R packages that provide curated epidemiological parameters:
 
--   [`epireview`](https://github.com/mrc-ide/epireview): Imperial College London’s ([Pathogen Epidemiology Review Group](https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/related-initiatives/perg/)) package to review published estimates
+-   [`epireview`](https://github.com/mrc-ide/epireview): Imperial College London's ([Pathogen Epidemiology Review Group](https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/related-initiatives/perg/)) package to review published estimates
 
--   `epiparameter`: Part of LSHTM’s [Epiverse initiative](https://data.org/initiatives/epiverse/), offering access to standardised disease parameters
+-   [`epiparameter`](https://github.com/epiverse-trace/epiparameter): Part of LSHTM's [Epiverse initiative](https://data.org/initiatives/epiverse/), offering access to standardised disease parameters
 
 #### Generation time
 
@@ -241,7 +241,7 @@ gt <- tibble(mean = 11.5, sd = 7, cv = sd/mean)
 The incubation period is the time between infection and the onset of symptoms.
 
 ```{r}
-#remotes::install_github("epiverse-trace/epiparameter")
+# remotes::install_github("epiverse-trace/epiparameter")
 library(epiparameter)
 
 incub <- epiparameter_db(
