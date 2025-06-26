@@ -46,7 +46,7 @@ o2list <- furrr::future_map(
   .options = furrr::furrr_options(seed = TRUE)
 )
 
-#saveRDS(o2list, "data/o2list.rds")
+saveRDS(o2list, "data/o2list.rds")
 ```
 
 ## Trace plots 📈
@@ -118,7 +118,6 @@ Without formal statistical methods to differentiate *epidemic forests* (*i.e.* c
 First we'll process `o2list` to obtain a list of *tidy* transmission trees using [`o2ools`](https://cygei.github.io/o2ools/).
 
 ```{r}
-#install.packages("o2ools")
 library(o2ools)
 o2trees <- lapply(o2list, function(chain) {
   chain %>% 
@@ -138,7 +137,6 @@ Let's use `mixtree` to compare all chains with `do.call`.
 We can use the $\chi^2$ test:
 
 ```{r}
-#install.packages("mixtree")
 library(mixtree)
 #?mixtree::tree_test
 do.call(what = mixtree::tree_test, args = c(o2trees, list(method = "chisq")))

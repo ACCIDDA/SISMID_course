@@ -7,9 +7,23 @@ install.packages(c(
 ))
 
 # somewhat lagging versions of these are also available from CRAN
-remotes::install_github("epiverse-trace/epiparameter")
-remotes::install_github("reconhub/distcrete")
+install.packages("epiparameter", repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org"))
+install.packages(
+  "https://github.com/reconhub/distcrete/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
 
 # not available on CRAN
-remotes::install_github("mrc-ide/epireview")
-remotes::install_github("CyGei/linktree")
+#epireview
+install.packages(
+  "https://github.com/mrc-ide/epireview/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
+#linktree
+install.packages(
+  "https://github.com/CyGei/linktree/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
