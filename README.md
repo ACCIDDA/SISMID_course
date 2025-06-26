@@ -5,7 +5,7 @@
 
 We are excited to welcome you to the series of sessions
 
-**Before the first session**, please ensure you have completed [the pre-course videos and readings on Canvas](https://canvas.instructure.com/courses/11724282), and that your [R environment is fully set up](#installation_and_setup).
+**Before the first session**, please ensure you have completed [the pre-course videos and readings on Canvas](https://canvas.instructure.com/courses/11724282), and that your [R environment is fully set up](#installation-and-setup).
 
 **During the live sessions**, we will work through practical outbreak exercises using Quarto (`.qmd`) files, based on a simulated Ebola outbreak.
 
