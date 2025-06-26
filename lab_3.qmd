@@ -27,17 +27,15 @@ We will work with a fictional dataset from an Ebola outbreak in the city of Ankh
 Public health authorities have collected contact tracing and epidemiological data up to 25 November 2017. The data includes:
 
 -   **`PHM-EVD-linelist-2017-11-25.xlsx`**: A linelist of reported cases.\
-    📁[Download the file here](https://www.reconlearn.org/data/PHM-EVD-linelist-2017-11-25.xlsx) and place it in a `data/` folder.
+    📁[Download the file here](https://www.reconlearn.org/data/PHM-EVD-linelist-2017-11-25.xlsx) and place it in a `data/` folder. (**Note** the file should already exist in your `data` folder)
 
 -   **`PHM-EVD-contacts-2017-11-25.xlsx`**: A contact tracing dataset containing information on reported contacts between cases.\
-    📁 [Download the file here](https://www.reconlearn.org/data/PHM-EVD-contacts-2017-11-25.xlsx) and place it in the same `data/` folder.
+    📁 [Download the file here](https://www.reconlearn.org/data/PHM-EVD-contacts-2017-11-25.xlsx) and place it in the same `data/` folder. (**Note** the file should already exist in your `data` folder)
 
 ## Data preparation 🛠️
 
 ```{r}
-#install.packages("tidyverse") # includes dplyr, ggplot2, tidyr
 library(tidyverse)
-#install.packages("readxl")
 library(readxl)
 
 # Load the linelist
@@ -58,7 +56,6 @@ str(contacts)
 [epicontacts](https://www.repidemicsconsortium.org/epicontacts/) is a package that provides tools for processing outbreak data, specifically the linelist and contacts.
 
 ```{r}
-#install.packages("epicontacts")
 library(epicontacts)
 # Create an epicontacts object from the linelist and contacts
 epi  <- make_epicontacts(linelist = linelist,
@@ -124,7 +121,6 @@ Laboratories usually produce a consensus sequence for each sample, representing 
 You can download the FASTA file [here](https://www.reconlearn.org/data/PHM-EVD-WGS.fa) and save it in the `data/` folder. This file contains the consensus sequences collected during the outbreak.
 
 ```{r}
-#install.packages("ape")
 library(ape)
 dna <- read.dna("data/PHM-EVD-WGS.fa", format = "fasta")
 dna
@@ -176,7 +172,7 @@ The tree is rooted at the earliest sampled case, providing a sense of directiona
 
 1.  Within-host viral evolution over time, weak transmission bottlenecks (allowing multiple viral variants to be transmitted), or multiple infection events (co-infection or superinfection) can lead to genetically dissimilar viruses between an infector and its infectee.
 
-2.  Common source exposure (*i.e.* same infector), or limited viral evolution between transmission events can result in genetically similar viruses in cases that are not directly linked.
+2.  Common infector, or limited viral evolution between transmission events can result in genetically similar viruses in cases that are not directly linked.
 
 3.  **No** - \`earliest case' refers to earliest *sampled*, not necessarily first infected. The true index case might not have been detected, sequenced, or may have been sampled later.
 
@@ -214,7 +210,7 @@ To reconstruct the outbreak, `outbreaker2` requires **delay distributions** that
 
 -   **Generation time** is used to infer the most likely transmission pairs based on their times of infection.
 
-<details>
+</details>
 
 For **Ebola**, search the literature to identify estimates of the generation time and incubation period. You can also explore two R packages that provide curated epidemiological parameters:
 
@@ -227,7 +223,6 @@ For **Ebola**, search the literature to identify estimates of the generation tim
 The generation time is the time between the times of infection in an infector-infectee pair. In practice, the serial interval is used as a proxy for the generation time as they typically have the same mean although they have different variances ([Svensson, 2007](https://doi.org/10.1016/j.mbs.2006.10.010)).
 
 ```{r}
-#remotes::install_github('mrc-ide/epireview')
 library(epireview)
 ebola <- epireview::load_epidata("ebola")
 
@@ -267,7 +262,6 @@ incub <- lapply(incub, function(x){
 The [distcrete](https://github.com/reconhub/distcrete) package allows us to construct discrete delay distributions. These delays are often based on gamma distributions, which are continuous by nature but can be discretised to estimate the probability of a delay falling within specific time intervals. We use [epitrix](https://www.repidemicsconsortium.org/epitrix/) to convert the mean and coefficient of variation (CV) of the delay distribution into shape and scale parameters for the gamma distribution.
 
 ```{r}
-#remotes::install_github("reconhub/distcrete")
 library(distcrete)
 library(epitrix)
 

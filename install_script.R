@@ -16,13 +16,23 @@ install.packages(c(
 ))
 
 # somewhat lagging versions of these are also available from CRAN
-# but we're going to install the latest versions from Github
-# you can expect to be prompted about updating dependencies, so you may need
-# to provide an interactive answer
-remotes::install_github("epiverse-trace/epiparameter")
-remotes::install_github("reconhub/distcrete")
+install.packages("epiparameter", repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org"))
+install.packages(
+  "https://github.com/reconhub/distcrete/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
 
-# these are not available on CRAN; again, you may be prompted about installing
-# dependencies
-remotes::install_github("mrc-ide/epireview")
-remotes::install_github("CyGei/linktree")
+# not available on CRAN
+#epireview
+install.packages(
+  "https://github.com/mrc-ide/epireview/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
+#linktree
+install.packages(
+  "https://github.com/CyGei/linktree/archive/refs/heads/main.tar.gz",
+  repos = NULL,
+  type = "source"
+)
