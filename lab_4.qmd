@@ -312,10 +312,16 @@ The `EpiEstim` package estimates $R_t$ from incidence data and a given serial in
 
 ```{r}
 library(EpiEstim)
-library(incidence)
+
+incid_df <- epi$linelist %>%
+  select(onset) %>% 
+  count(onset, name = "I") %>%
+  complete(onset = seq(min(onset), max(onset), by = "day"),
+           fill = list(I = 0)) %>%
+  rename(dates = onset)
 
 Rt <- EpiEstim::estimate_R(
-  incid = incidence::incidence(epi$linelist$onset),
+  incid = incid_df,
   method = "non_parametric_si",
   config = list(si_distr = c(0, o2data$w_dens))
 )
