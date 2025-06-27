@@ -8,17 +8,22 @@ install.packages("sodium")
 # - on unix systems, use apt, snap, etc to find libsodium and install the dev version
 # - for Windows / OSX, see https://py-ipv8.readthedocs.io/en/latest/preliminaries/install_libsodium.html
 
+# for this library, `RLumShiny`, you may need to install some libraries
+# for one of its dependencies `terra` associated with geospatial tools
+# see https://rspatial.github.io/terra/#installation
+install.packages("RLumShiny")
+
 install.packages(c(
   "rmarkdown", "ape", "epicontacts", "epitrix", "readxl", "tidyverse",
   "outbreaker2", "furrr", "coda", "o2ools", "mixtree",
-  "EpiEstim", "incidence", "ggpubr", "igraph", "tidygraph",
-  "ggraph", "incidence2", "remotes"
+  "EpiEstim", "ggpubr", "igraph", "tidygraph",
+  "ggraph", "incidence2"
 ))
 
 # somewhat lagging versions of these are also available from CRAN
 install.packages("epiparameter", repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org"))
 install.packages(
-  "https://github.com/reconhub/distcrete/archive/refs/heads/main.tar.gz",
+  "https://github.com/reconhub/distcrete/archive/refs/heads/master.tar.gz",
   repos = NULL,
   type = "source"
 )
