@@ -17,11 +17,15 @@ install.packages(c(
   "rmarkdown", "ape", "epicontacts", "epitrix", "readxl", "tidyverse",
   "outbreaker2", "furrr", "coda", "o2ools", "mixtree",
   "EpiEstim", "ggpubr", "igraph", "tidygraph",
-  "ggraph", "incidence2"
+  "ggraph", "incidence2", "rio", "here", "DBI", "RSQLite",
+  "cleanepi", "reactable", "linelist", "simulist"
 ))
 
 # somewhat lagging versions of these are also available from CRAN
-install.packages("epiparameter", repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org"))
+install.packages(
+  c("epiparameter", "tracetheme"),
+  repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org")
+)
 install.packages(
   "https://github.com/reconhub/distcrete/archive/refs/heads/master.tar.gz",
   repos = NULL,
