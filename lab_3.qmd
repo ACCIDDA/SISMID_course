@@ -1,5 +1,5 @@
 ---
-title: "Outbreak Reconstruction - Part1"
+title: "Lab 3: Outbreak Reconstruction, Part 1"
 format:
   html:
     self-contained: true
