@@ -18,12 +18,12 @@ install.packages(c(
   "outbreaker2", "furrr", "coda", "o2ools", "mixtree",
   "EpiEstim", "ggpubr", "igraph", "tidygraph",
   "ggraph", "incidence2", "rio", "here", "DBI", "RSQLite",
-  "cleanepi", "reactable", "linelist", "simulist"
+  "cleanepi", "reactable", "linelist", "EpiNow2", "cfr"
 ))
 
 # somewhat lagging versions of these are also available from CRAN
 install.packages(
-  c("epiparameter", "tracetheme"),
+  c("epiparameter", "tracetheme", "simulist"),
   repos = c("https://epiverse-trace.r-universe.dev", "https://cloud.r-project.org")
 )
 install.packages(

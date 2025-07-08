@@ -3,7 +3,7 @@ title: "Lab 1: Early Phase Tasks & Tools"
 format:
   html:
     self-contained: true
-editor: visual
+editor: source
 knitr:
   opts_chunk: 
     message: false
@@ -12,7 +12,7 @@ knitr:
 
 # Overview
 
-In the early stages of an outbreak, the questions revolve around trying to understand if something is happening and, if so, how concerning is that happening?
+In the early stages of an outbreak response, the questions revolve around trying to understand if something is happening and, if so, how concerning is that happening?
 
 In this phase, the calculations are computational simple. This reflects sparse data and tolerance for simplifying assumptions that tend to be risk-averse. However, there is often relatively complex work in this phase surrounding collecting and curating data into useful streams for analysis.
 
@@ -32,7 +32,6 @@ First, we will use `{rio}` to read data and `{here}` to assure locating files wi
 
 Several packages are available for importing outbreak data stored in individual files into `R`. These include [`{rio}`](https://gesistsa.github.io/rio/), [`{readr}`](https://readr.tidyverse.org/) from the `{tidyverse}`, [`{io}`](https://bitbucket.org/djhshih/io/src/master/), [`{ImportExport}`](https://cran.r-project.org/web/packages/ImportExport/index.html), and [`{data.table}`](https://rdatatable.gitlab.io/data.table/). Together, these packages offer methods to read single or multiple files in a wide range of formats.
 
-
 ```{r,eval=TRUE,message=FALSE,warning=FALSE}
 # Load packages
 library(dplyr) # for {dplyr} functions
@@ -40,7 +39,7 @@ library(rio) # for importing data
 library(here) # for easy file referencing
 ```
 
-## Reading from files 
+## Reading from files
 
 The below example shows how to import a `csv` file into `R` environment using `{rio}` package. We use the `{here}` package to tell R to look for the file in the `data/` folder of your project, and `as_tibble()` to convert into a tidier format for subsequent analysis in R.
 
@@ -93,7 +92,7 @@ db_connection <- DBI::dbConnect(
 
 A connection to an local database on disk would look like:
 
-```r
+``` r
 db_connection <- DBI::dbConnect(
   drv = RSQLite::SQLite(),
   dbname = here("path", "to", "database.sqlite") # connect to one on disk
@@ -102,7 +101,7 @@ db_connection <- DBI::dbConnect(
 
 ... or to a remote database:
 
-```r
+``` r
 db_connection <- DBI::dbConnect(
   drv = RSQLite::SQLite(), 
   host = "database.epiversetrace.com",
@@ -164,7 +163,7 @@ DBI::dbDisconnect(conn = db_connection)
 
 ## Reading from Health Information System (HIS) APIs
 
-Health related data are also increasingly stored in specialized HIS APIs like **Fingertips**, **GoData**, **REDCap**, and **DHIS2**. We do not cover these more bespoke systems in this tutorial, but if you do use them in your work, you should consider looking at the [`{readepi}`](https://epiverse-trace.github.io/readepi/) package which is designed to work with HIS APIs.  
+Health related data are also increasingly stored in specialized HIS APIs like **Fingertips**, **GoData**, **REDCap**, and **DHIS2**. We do not cover these more bespoke systems in this tutorial, but if you do use them in your work, you should consider looking at the [`{readepi}`](https://epiverse-trace.github.io/readepi/) package which is designed to work with HIS APIs.
 
 # Working with Outbreak Data
 
@@ -183,14 +182,14 @@ raw_ebola_data
 
 🧠 **Question**: Compared to the earlier data we used to demonstrate the basics of reading data, what do you notice?
 
-Hopefully you identified some problems in these general categories: 
+Hopefully you identified some problems in these general categories:
 
-- *Codification*: Do all the entries in a column have the same data *type*? At a most basic level, typically integers versus reals vs character strings. Some types have higher level: a specific format to strings, words / letters from a particular set only, or strictly positive integers.
-- *Inconsistency*: If columns are somehow related, are the values in a row consistent with that relationship? If rows are somehow related, are the values within a column consistent with that relationship?
-- *Non-plausible values*: Where values conform to the appropriate type, are they reasonable in the context of the dataset?
-- *Missingness*: How do the data capture missing values? Does an `NA` actually define missing and/or is there some other value?
-- *Duplicates*: Are all observations unique?
-- *Irrelevance*: Is a column empty? Or perhaps constant-valued?
+-   *Codification*: Do all the entries in a column have the same data *type*? At a most basic level, typically integers versus reals vs character strings. Some types have higher level: a specific format to strings, words / letters from a particular set only, or strictly positive integers.
+-   *Inconsistency*: If columns are somehow related, are the values in a row consistent with that relationship? If rows are somehow related, are the values within a column consistent with that relationship?
+-   *Non-plausible values*: Where values conform to the appropriate type, are they reasonable in the context of the dataset?
+-   *Missingness*: How do the data capture missing values? Does an `NA` actually define missing and/or is there some other value?
+-   *Duplicates*: Are all observations unique?
+-   *Irrelevance*: Is a column empty? Or perhaps constant-valued?
 
 We can also use the `{cleanepi}` package to do a more-than-by-eye quick inspection of the dataset to identify potential issues with the `scan_data()` function:
 
@@ -205,8 +204,7 @@ The results provide an overview of the content of every column, including column
 
 ### Standardizing column names
 
-For this example dataset, standardizing column names typically involves removing spaces and connecting different words with “_”. This practice helps maintain consistency and readability in the dataset. However, the function used for 
-standardizing column names offers more options, for example you can exclude columns from standardization (use `?cleanepi::standardize_column_names` for more details).
+For this example dataset, standardizing column names typically involves removing spaces and connecting different words with “\_”. This practice helps maintain consistency and readability in the dataset. However, the function used for standardizing column names offers more options, for example you can exclude columns from standardization (use `?cleanepi::standardize_column_names` for more details).
 
 ```{r}
 sim_ebola_data <- cleanepi::standardize_column_names(raw_ebola_data)
@@ -215,7 +213,7 @@ names(sim_ebola_data)
 
 ### Dealing with Duplication and Irrelevance
 
-Raw data may contain irregularities such as **duplicated** rows, **empty** rows and columns, or **constant** columns (where all entries have the same value). Functions from `{cleanepi}` like `remove_duplicates()` and `remove_constants()` can remove such irregularities as demonstrated in the below code chunk. 
+Raw data may contain irregularities such as **duplicated** rows, **empty** rows and columns, or **constant** columns (where all entries have the same value). Functions from `{cleanepi}` like `remove_duplicates()` and `remove_constants()` can remove such irregularities as demonstrated in the below code chunk.
 
 ```{r}
 # Remove constants
@@ -231,8 +229,7 @@ sim_ebola_data
 
 🧠 **Question**: What changed? How can you tell?
 
-You can get the number and location of the duplicated rows that where found. Run `cleanepi::print_report()`, 
-wait for the report to open in your browser, and find the "Duplicates" tab.
+You can get the number and location of the duplicated rows that where found. Run `cleanepi::print_report()`, wait for the report to open in your browser, and find the "Duplicates" tab.
 
 ```{r,echo=FALSE,eval=FALSE}
 # Print a report; note, this is not run when compiling the qmd
@@ -242,8 +239,7 @@ cleanepi::print_report(sim_ebola_data)
 
 ### Replacing missing values
 
-In addition to the irregularities, raw data may contain missing values, and these may be encoded by different strings (e.g. `"NA"`, `""`, `character(0)`). To ensure robust analysis, it is a good practice to replace all missing values by `NA` in the 
-entire dataset. Below is a code snippet demonstrating how you can achieve this in `{cleanepi}` for missing entries represented by an empty string `"`:
+In addition to the irregularities, raw data may contain missing values, and these may be encoded by different strings (e.g. `"NA"`, `""`, `character(0)`). To ensure robust analysis, it is a good practice to replace all missing values by `NA` in the entire dataset. Below is a code snippet demonstrating how you can achieve this in `{cleanepi}` for missing entries represented by an empty string `"`:
 
 ```{r}
 sim_ebola_data <- cleanepi::replace_missing_values(
@@ -271,8 +267,7 @@ Notice that this call emits information about for example duplicate subject ids.
 
 ### Standardizing dates
 
-An epidemic dataset typically contains date columns for different events, such as the date of infection, 
-date of symptoms onset, etc. These dates can come in different date formats, both within and across columns, but they likely need to standardized so that subsequent analysis can compare or calculate both within and across columns.
+An epidemic dataset typically contains date columns for different events, such as the date of infection, date of symptoms onset, etc. These dates can come in different date formats, both within and across columns, but they likely need to standardized so that subsequent analysis can compare or calculate both within and across columns.
 
 The `{cleanepi}` package provides functionality for converting date columns of epidemic datasets into ISO format, ensuring consistency across the different date columns. Here's how you can use it on our simulated dataset:
 
@@ -299,6 +294,7 @@ sim_ebola_data <- cleanepi::convert_to_numeric(sim_ebola_data,
 )
 sim_ebola_data
 ```
+
 At this time, this operation does *not* result in an updated `print_report()` output.
 
 🧠 **Question**: What steps could you take to check which values were changed?
@@ -309,9 +305,7 @@ In addition to general purpose cleaning, the `{cleanepi}` package also has funct
 
 ### Checking sequence of dated-events
 
-Ensuring the correct order and sequence of dated events is crucial in epidemiological data analysis, especially 
-when analyzing infectious diseases where the timing of events like symptom onset and sample collection is essential. 
-The `{cleanepi}` package provides a helpful function called `check_date_sequence()` precisely for this purpose.
+Ensuring the correct order and sequence of dated events is crucial in epidemiological data analysis, especially when analyzing infectious diseases where the timing of events like symptom onset and sample collection is essential. The `{cleanepi}` package provides a helpful function called `check_date_sequence()` precisely for this purpose.
 
 Here's an example of a code chunk demonstrating the usage of the function `check_date_sequence()` in the first 100 records of our simulated Ebola dataset; note that this kind of analysis *only* works on standardized date data, so you cannot skip ahead to this step.
 
@@ -322,8 +316,7 @@ cleanepi::check_date_sequence(
 )
 ```
 
-This functionality is crucial for ensuring data integrity and accuracy in epidemiological analyses, as it helps identify 
-any inconsistencies or errors in the chronological order of events, allowing you to address them appropriately. We just looked at a sample here, but if you want to see a full report of issues, you can:
+This functionality is crucial for ensuring data integrity and accuracy in epidemiological analyses, as it helps identify any inconsistencies or errors in the chronological order of events, allowing you to address them appropriately. We just looked at a sample here, but if you want to see a full report of issues, you can:
 
 ```{r, eval=FALSE}
 sim_ebola_data <- cleanepi::check_date_sequence(
@@ -359,7 +352,7 @@ sim_ebola_data
 
 This approach captures the data cleaning process *and* can make the dictionary available for other researchers to use and inspect.
 
-Note that, when the column in the dataset contains values that are not in the dictionary, the function `cleanepi::clean_using_dictionary()` will raise an error. 
+Note that, when the column in the dataset contains values that are not in the dictionary, the function `cleanepi::clean_using_dictionary()` will raise an error.
 
 You can start a custom dictionary with a data frame inside or outside R. You can use the function `cleanepi::add_to_dictionary()` to include new elements in the dictionary. For example:
 
@@ -379,19 +372,14 @@ new_dictionary <- tibble::tibble(
 new_dictionary
 ```
 
-You can read more details in the section about "Dictionary-based data substituting" in the package 
-["Get started" vignette](https://epiverse-trace.github.io/cleanepi/articles/cleanepi.html#dictionary-based-data-substituting).
+You can read more details in the section about "Dictionary-based data substituting" in the package ["Get started" vignette](https://epiverse-trace.github.io/cleanepi/articles/cleanepi.html#dictionary-based-data-substituting).
 
 ### Calculating time span between different date events
 
-In epidemiological data analysis, it is also useful to track and analyze time-dependent events, such as the progression 
-of a disease outbreak (i.e., the time difference between today and the first case reported) or the duration between 
-sample collection and analysis (i.e., the time difference between today and the sample collection). The most common 
-example is to calculate the age of all the subjects given their date of birth (i.e., the time difference between today 
-and the date of birth).
+In epidemiological data analysis, it is also useful to track and analyze time-dependent events, such as the progression of a disease outbreak (i.e., the time difference between today and the first case reported) or the duration between sample collection and analysis (i.e., the time difference between today and the sample collection). The most common example is to calculate the age of all the subjects given their date of birth (i.e., the time difference between today and the date of birth).
 
-The `{cleanepi}` package offers a convenient function for calculating the time elapsed between two dated events at different time scales. For example, the below code snippet utilizes the function `cleanepi::timespan()` to compute the  time elapsed since the date of sample for the case identified until the 3rd of January 2025 (`"2025-01-03"`).
- 
+The `{cleanepi}` package offers a convenient function for calculating the time elapsed between two dated events at different time scales. For example, the below code snippet utilizes the function `cleanepi::timespan()` to compute the time elapsed since the date of sample for the case identified until the 3rd of January 2025 (`"2025-01-03"`).
+
 ```{r}
 sim_ebola_data <- cleanepi::timespan(
   sim_ebola_data,
@@ -407,13 +395,11 @@ sim_ebola_data |>
   dplyr::select(case_id, date_sample, years_since_collection, remainder_months)
 ```
 
-After executing the function `cleanepi::timespan()`, two new columns named `years_since_collection` and 
-`remainder_months` are added to the **sim_ebola_data** dataset, containing the calculated time elapsed since the date 
-of sample collection for each case, measured in years, and the remaining time measured in months.
+After executing the function `cleanepi::timespan()`, two new columns named `years_since_collection` and `remainder_months` are added to the **sim_ebola_data** dataset, containing the calculated time elapsed since the date of sample collection for each case, measured in years, and the remaining time measured in months.
 
 ## Multiple operations at once
 
-As you are developing the cleaning regimen, you will typically have a step at a time (as shown in the above series of chunks). However, if you do not consolidate these steps as you work through them, you run the risk errors - running steps out of order, forgetting a step, etc. To consolidate as you work, you can combine multiple data cleaning tasks via the pipe operator in `|>`, as shown in the below code snippet. 
+As you are developing the cleaning regimen, you will typically have a step at a time (as shown in the above series of chunks). However, if you do not consolidate these steps as you work through them, you run the risk errors - running steps out of order, forgetting a step, etc. To consolidate as you work, you can combine multiple data cleaning tasks via the pipe operator in `|>`, as shown in the below code snippet.
 
 ```{r,warning = FALSE, message = FALSE}
 # Perfom the cleaning operations using the pipe (|>) operator
@@ -454,12 +440,9 @@ The `{cleanepi}` package also offers wrapper function called `clean_data()`, whi
 
 # Validating Data
 
-Once you have read and cleaned the case data,
-it's essential to establish an additional foundation layer to ensure the integrity and reliability of subsequent
-analyses. Otherwise you might find that your analysis suddenly stops working when specific variables appear or disappear, or their underlying data types (like `<date>` or `<chr>`) change. Specifically, this additional layer involves: 1) verifying the presence and correct data type of certain columns within
-your dataset, a process commonly referred to as "tagging"; 2) implementing measures to check that these tagged columns are not inadvertently deleted during further data processing steps, known as "validation".
+Once you have read and cleaned the case data, it's essential to establish an additional foundation layer to ensure the integrity and reliability of subsequent analyses. Otherwise you might find that your analysis suddenly stops working when specific variables appear or disappear, or their underlying data types (like `<date>` or `<chr>`) change. Specifically, this additional layer involves: 1) verifying the presence and correct data type of certain columns within your dataset, a process commonly referred to as "tagging"; 2) implementing measures to check that these tagged columns are not inadvertently deleted during further data processing steps, known as "validation".
 
-This element focuses tagging and validate outbreak data using the [`{linelist}`](https://epiverse-trace.github.io/linelist/) package. We will use previously generated data, but imagine you are in an emergency response situation, where you have automated an analysis to read data directly from the online source and then generate reports.  Suddenly, however, that source changed a key variable you have been using!
+This element focuses tagging and validate outbreak data using the [`{linelist}`](https://epiverse-trace.github.io/linelist/) package. We will use previously generated data, but imagine you are in an emergency response situation, where you have automated an analysis to read data directly from the online source and then generate reports. Suddenly, however, that source changed a key variable you have been using!
 
 How could you detect if the data input is **still valid** to replicate the analysis code you wrote the day before? That is the focus of this section.
 
@@ -498,14 +481,13 @@ The `{linelist}` package supplies tags for common epidemiological variables and 
 
 ## Validation with `{linelist}`
 
-To ensure that all tagged variables are standardized and have the correct data 
-types, use the `linelist::validate_linelist()`, as 
-shown in the example below:
+To ensure that all tagged variables are standardized and have the correct data types, use the `linelist::validate_linelist()`, as shown in the example below:
 
 ```{r}
 linelist::validate_linelist(linelist_data)
 ```
-Now we will practice validating some tagged variables by simulating a situation in an ongoing outbreak. Imagine you wake up to discover that the data stream you rely on has a new set of entries (which is normal) and one variable has a changed data type (which is not normal). 
+
+Now we will practice validating some tagged variables by simulating a situation in an ongoing outbreak. Imagine you wake up to discover that the data stream you rely on has a new set of entries (which is normal) and one variable has a changed data type (which is not normal).
 
 For example, let's assume the variable `age` changed from a double (`<dbl>`) variable to character (`<chr>`). To simulate that, we can ...
 
@@ -520,10 +502,11 @@ unclean_ll <- unclean_data |> linelist::make_linelist(
 
 unclean_ll |> linelist::validate_linelist()
 ```
+
 Can imagine other situations and what errors they might report?
 
-- `date_onset` changes from a `<date>` variable to character (`<chr>`),
-- `gender` changes from a character (`<chr>`) variable to integer (`<int>`).
+-   `date_onset` changes from a `<date>` variable to character (`<chr>`),
+-   `gender` changes from a character (`<chr>`) variable to integer (`<int>`).
 
 Feel free to repeat the above validation test. Does the `Error` message propose to us the solution?
 
@@ -550,7 +533,7 @@ new_df <- linelist_data |>
   dplyr::select(case_id, gender)
 ```
 
-This `Warning` message above is the default output option when we lose tags in a `linelist` object. However, it can be changed to an `Error` message using `linelist::lost_tags_action()`. 
+This `Warning` message above is the default output option when we lose tags in a `linelist` object. However, it can be changed to an `Error` message using `linelist::lost_tags_action()`.
 
 Aside: The `linelist` object resembles a `data.frame` but with richer features. Other packages that are `linelist`-aware can leverage these features. For example, you can extract a data frame of only the tagged columns using the `linelist::tags_df()` function, as shown below:
 
@@ -597,14 +580,13 @@ sim_data
 
 This linelist dataset has entries on individual-level simulated events during the outbreak.
 
-Aside: This is the default configuration of `{simulist}`, so makes many assumptions about the pathogen. If you want to know more about `sim_linelist()` and other functionalities
-check the [documentation website](https://epiverse-trace.github.io/simulist/). You can also find data sets from real emergencies from the past at the [`{outbreaks}` R package](https://www.reconverse.org/outbreaks/).
+Aside: This is the default configuration of `{simulist}`, so makes many assumptions about the pathogen. If you want to know more about `sim_linelist()` and other functionalities check the [documentation website](https://epiverse-trace.github.io/simulist/). You can also find data sets from real emergencies from the past at the [`{outbreaks}` R package](https://www.reconverse.org/outbreaks/).
 
 ## Aggregating
 
 When thinking about population-level dynamics, we typically want to consider the number of events that occur on a particular day or week, rather than focusing on individual cases. Since real linelist data also has a variety of privacy-sensitive details, modelers may also only be permitted to have access to the event data.
 
-Thus typically, linelist data gets converted into incidence data. The [incidence2]((https://www.reconverse.org/incidence2/articles/incidence2.html){.external target="_blank"}) package offers a useful function called `incidence2::incidence()` for grouping case data, usually based around dated events and/or other characteristics. The code chunk provided below demonstrates the creation of an `<incidence2>` class object from the simulated `linelist` data based on the date of onset.
+Thus typically, linelist data gets converted into incidence data. The [incidence2]((https://www.reconverse.org/incidence2/articles/incidence2.html)%7B.external%20target=%22_blank%22%7D) package offers a useful function called `incidence2::incidence()` for grouping case data, usually based around dated events and/or other characteristics. The code chunk provided below demonstrates the creation of an `<incidence2>` class object from the simulated `linelist` data based on the date of onset.
 
 ```{r}
 # Create an incidence object by aggregating case data based on the date of onset
@@ -617,8 +599,8 @@ daily_incidence <- incidence2::incidence(
 # View the incidence data
 daily_incidence
 ```
-With the `{incidence2}` package, you can specify the desired interval (e.g. day, week) and categorize cases by one or 
-more factors. Below is a code snippet demonstrating weekly cases grouped by the date of onset, sex, and type of case.
+
+With the `{incidence2}` package, you can specify the desired interval (e.g. day, week) and categorize cases by one or more factors. Below is a code snippet demonstrating weekly cases grouped by the date of onset, sex, and type of case.
 
 ```{r}
 # Group incidence data by week, accounting for sex and case type
@@ -660,8 +642,7 @@ plot(daily_incidence) +
     y = "Dialy cases" # y-axis label
   ) +
   tracetheme::theme_trace() # Apply the custom trace theme
-``` 
-
+```
 
 ```{r}
 # Plot weekly incidence data
@@ -671,7 +652,7 @@ plot(weekly_incidence) +
     y = "weekly cases" # y-axis label
   ) +
   tracetheme::theme_trace() # Apply the custom trace theme
-``` 
+```
 
 ## Curve of cumulative cases
 
@@ -688,7 +669,7 @@ The cumulative number of cases can be calculated using the `cumulate()` function
 
 Note that this function preserves grouping, i.e., if the `incidence2` object contains groups, it will accumulate the cases accordingly.
 
-##  Peak estimation
+## Peak estimation
 
 You can estimate the peak -- the time with the highest number of recorded cases-- using the `estimate_peak()` function from the `{incidence2}` package. This function employs a bootstrapping method to determine the peak time (i.e. by resampling dates with replacement, resulting in a distribution of estimated peak times).
 
@@ -705,14 +686,12 @@ peak <- incidence2::estimate_peak(
 # Display the estimated peak
 print(peak)
 ```
-This example demonstrates how to estimate the peak time using the `estimate_peak()` function at $95%$ 
-confidence interval and using 100 bootstrap samples. 
+
+This example demonstrates how to estimate the peak time using the `estimate_peak()` function at $95%$ confidence interval and using 100 bootstrap samples.
 
 ## Advanced Plotting with ggplot2
 
-`{incidence2}` produces basic plots for epicurves, but additional work is required to create well-annotated graphs. However, using the `{ggplot2}` package, you can generate more sophisticated and epicurves with more flexibility in annotation.
-`{ggplot2}` is a comprehensive package that provides many plot types. However, we will focus on three key elements for producing epicurves: histogram plots, scaling date axes and their labels, and general plot theme annotation.
-The example below demonstrates how to configure these three elements for a simple `{incidence2}` object.
+`{incidence2}` produces basic plots for epicurves, but additional work is required to create well-annotated graphs. However, using the `{ggplot2}` package, you can generate more sophisticated and epicurves with more flexibility in annotation. `{ggplot2}` is a comprehensive package that provides many plot types. However, we will focus on three key elements for producing epicurves: histogram plots, scaling date axes and their labels, and general plot theme annotation. The example below demonstrates how to configure these three elements for a simple `{incidence2}` object.
 
 ```{r}
 # Define date breaks for the x-axis
@@ -799,14 +778,13 @@ ggplot2::ggplot(data = daily_incidence_2) +
 
 # Early Analysis Calculations
 
-Exploraty analysis and visualizations are useful, but ultimately may not be sufficiently quantitative for public health operational needs. Understanding trends in surveillance data is crucial for understanding epidemic drivers and dynamics. This may include forecasting disease burden, planning future public health interventions, and assessing the effectiveness of past control measures. By analyzing trends, policymakers and public health experts can make informed decisions to mitigate the spread of diseases and protect public health. 
+Exploraty analysis and visualizations are useful, but ultimately may not be sufficiently quantitative for public health operational needs. Understanding trends in surveillance data is crucial for understanding epidemic drivers and dynamics. This may include forecasting disease burden, planning future public health interventions, and assessing the effectiveness of past control measures. By analyzing trends, policymakers and public health experts can make informed decisions to mitigate the spread of diseases and protect public health.
 
 ## Simple model
 
 Aggregated case data over specific time units (i.e. incidence data), typically represent the number of cases that occur within that time frame. We can think of these cases as noisy observations generated by the underlying epidemic process (which we cannot directly observe). To account for randomness in the observations, we can assume that observed cases follow either `Poisson distribution` (if cases are reported at a constant average rate over time) or a `negative binomial (NB) distribution` (if there is potential variability in reporting over time). When analyzing such data, one common approach is to examine the trend over time by computing the rate of change, which can indicate whether there is exponential growth or decay in the number of cases. Exponential growth implies that the number of cases is increasing at an accelerating rate over time, while exponential decay suggests that the number of cases is decreasing at a decelerating rate.
 
 The `i2extras` package provides methods for modelling the trend in case data, calculating moving averages, and exponential growth or decay rate.
-
 
 ```{r, warning=FALSE, message=FALSE}
 # load packages which provides methods for modeling
@@ -846,9 +824,9 @@ plot(fitted_curve_nb, angle = 45) +
 
 ## Exponential growth or decay rate
 
-The exponential growth or decay rate, denoted as $r$, serves as an indicator for the trend in cases, indicating whether they are increasing (growth) or decreasing (decay) on an exponential scale. This rate is computed using the so-called  **renewal equation** [(Wallinga et al. 2006)](https://royalsocietypublishing.org/doi/10.1098/rspb.2006.3754), which mechanistically links the reproductive number $R$ of new cases (i.e. the average number of people that a typical case infects) to the generation interval of the disease (i.e. the average delay from one infection to the next in a chain of transmission). This computational method is implemented in the `{i2extras}` package.
+The exponential growth or decay rate, denoted as $r$, serves as an indicator for the trend in cases, indicating whether they are increasing (growth) or decreasing (decay) on an exponential scale. This rate is computed using the so-called **renewal equation** [(Wallinga et al. 2006)](https://royalsocietypublishing.org/doi/10.1098/rspb.2006.3754), which mechanistically links the reproductive number $R$ of new cases (i.e. the average number of people that a typical case infects) to the generation interval of the disease (i.e. the average delay from one infection to the next in a chain of transmission). This computational method is implemented in the `{i2extras}` package.
 
-Below is a code snippet demonstrating how to extract the growth/decay rate from the above **negative binomial**-fitted  curve using the `growth_rate()` function:
+Below is a code snippet demonstrating how to extract the growth/decay rate from the above **negative binomial**-fitted curve using the `growth_rate()` function:
 
 ```{r, message=FALSE, warning=FALSE}
 rates_nb <- i2extras::growth_rate(fitted_curve_nb)
