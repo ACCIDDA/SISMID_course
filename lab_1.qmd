@@ -846,6 +846,8 @@ peaks_nb <- i2extras::estimate_peak(df_incid, progress = FALSE) |>
 base::print(peaks_nb)
 ```
 
+🧠 **Question**: Use the Poisson distribution to model the number of cases in the example above, calculate the growth or decay rate and estimate the peak time? How these estimates differ from those obtained using the negative binomial distribution?
+
 ## Moving Average
 
 A moving or rolling average calculates the average number of cases within a specified time period. This can be achieved by utilizing the `add_rolling_average()` function from the `{i2extras}` package on an `incidence2 object`. The following code chunk demonstrates the computation of the weekly average number of cases from the `incidence2` object `df_incid`, followed by visualization.
