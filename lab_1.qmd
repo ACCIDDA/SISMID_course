@@ -16,7 +16,7 @@ In the early stages of an outbreak response, the questions revolve around trying
 
 In this phase, the calculations are computational simple. This reflects sparse data and tolerance for simplifying assumptions that tend to be risk-averse. However, there is often relatively complex work in this phase surrounding collecting and curating data into useful streams for analysis.
 
-In this session, we introduce several tools for working with common data you might see early in outbreak. You will practice with these tools to create a clean data stream, which you then use in analyses tailored to assessing overall threat from a pathogen, like epidemic growth rate and reproductive number, case fatality ratios, and other measures.
+In this session, we introduce several tools for working with common data you might see early in outbreak. You will practice with these tools to create a clean data stream, which you then use in analyses tailored to assessing overall threat from a pathogen, like epidemic growth rate and reproductive number, case fatality risks, and other measures.
 
 Throughout the session, when you see `{somepackage}` that indicates an `R` package. In code blocks, we will also tend to use the syntax `somepackage::somefunction()` when using a function from a package rather than standard `R`. While this syntax is unnecessary if you have already loaded a package with `library(somepackage)`, for learning purposes it highlights where functions come from.
 
@@ -39,7 +39,7 @@ library(rio) # for importing data
 library(here) # for easy file referencing
 ```
 
-## Reading from files
+## Reading from Files
 
 The below example shows how to import a `csv` file into `R` environment using `{rio}` package. We use the `{here}` package to tell R to look for the file in the `data/` folder of your project, and `as_tibble()` to convert into a tidier format for subsequent analysis in R.
 
@@ -58,7 +58,7 @@ Quick aside on the `{here}` package: `{here}` is designed to (1) simplify file r
 
 🧠 **Question**: what are some key contexts where `{here}` might *not* work?
 
-Aside: The `{here}` package can help manage reproducibility to your work. If you are interested in a tutorial on a wide variety of reproducibility practices and tools in R, consider [this tutorial from Epiverse](https://epiverse-trace.github.io/research-compendium/aio.html)
+Aside: The `{here}` package can help manage reproducibility to your work. If you are interested in a tutorial on a wide variety of reproducibility practices and tools in R, consider [this tutorial from Epiverse](https://epiverse-trace.github.io/research-compendium/aio.html).
 
 Now let's read in some other data - there's zipped data for the Marburg outbreak in same place as the Ebola data. Modify the code below to read in the Marburg data.
 
@@ -70,9 +70,9 @@ marburg_data <- "..." |>
 marburg_data
 ```
 
-Hint: you can use `{here}` and `{rio}` again; check the [full list of `{rio}` supported file formats](https://gesistsa.github.io/rio/#supported-file-formats) on the package website (which also includes advice on expanding to additional formats)
+Hint: you can use `{here}` and `{rio}` again; check the [full list of `{rio}` supported file formats](https://gesistsa.github.io/rio/#supported-file-formats) on the package website (which also includes advice on expanding to additional formats).
 
-## Reading from databases
+## Reading from Databases
 
 In addition to reading data from files, we can also read data directly from databases. This is particularly useful when dealing with large datasets or when data is stored in a relational database management system (RDBMS). We get the data using "queries" - queries tell the database what to get and how to return it and even execute some calculations, which can help optimize performance and reduce memory usage. External RDBMS also have the advantage that multiple users can access, store and analyse parts of the dataset simultaneously, without having to transfer individual files, which would make it very difficult to track which version is up-to-date.
 
@@ -202,7 +202,7 @@ The results provide an overview of the content of every column, including column
 
 ## Fixing Problems
 
-### Standardizing column names
+### Standardizing Column Names
 
 For this example dataset, standardizing column names typically involves removing spaces and connecting different words with “\_”. This practice helps maintain consistency and readability in the dataset. However, the function used for standardizing column names offers more options, for example you can exclude columns from standardization (use `?cleanepi::standardize_column_names` for more details).
 
@@ -237,7 +237,7 @@ library(reactable)
 cleanepi::print_report(sim_ebola_data)
 ```
 
-### Replacing missing values
+### Replacing Missing Values
 
 In addition to the irregularities, raw data may contain missing values, and these may be encoded by different strings (e.g. `"NA"`, `""`, `character(0)`). To ensure robust analysis, it is a good practice to replace all missing values by `NA` in the entire dataset. Below is a code snippet demonstrating how you can achieve this in `{cleanepi}` for missing entries represented by an empty string `"`:
 
@@ -251,7 +251,7 @@ sim_ebola_data
 
 Note: if you `print_report()` again, you can now see the `NA`-related changes; the function will not automatically update the report that appears in your browser, but can be re-run with each step.
 
-### Validating subject IDs
+### Validating Subject IDs
 
 Each entry in this dataset represents a subject (e.g. a disease case or study participant) and should be distinguishable by a specific column formatted in a particular way, such as falling within a specified range, containing certain prefixes and/or suffixes, containing a specific number of characters. The `{cleanepi}` package offers the function `check_subject_ids()` designed precisely for this task as shown in the below code chunk. This function validates whether they are unique and meet the required criteria.
 
@@ -265,7 +265,7 @@ sim_ebola_data <- cleanepi::check_subject_ids(
 
 Notice that this call emits information about for example duplicate subject ids. Once again, we can refer to `print_report()` to see where there may be issues - focus on "Unexpected subject ids" tab to identify what IDs require attention. We are not going to do more with cleaning this issue, but you can get further information at the associated [`{cleanepi}` documentation](https://epiverse-trace.github.io/cleanepi/reference/check_subject_ids.html).
 
-### Standardizing dates
+### Standardizing Dates
 
 An epidemic dataset typically contains date columns for different events, such as the date of infection, date of symptoms onset, etc. These dates can come in different date formats, both within and across columns, but they likely need to standardized so that subsequent analysis can compare or calculate both within and across columns.
 
@@ -284,7 +284,7 @@ sim_ebola_data
 
 This function converts the values in the target columns, but if `target_columns = NULL` (the default) will attempt to automatically identify date columns and convert them into the **Ymd** format.
 
-### Converting to numeric values
+### Converting to Numeric Values
 
 In real data, sometimes numerical values are recorded with a mixture of character and numeral values. For calculations, these need to be standardized to numeric values (e.g. `"seven"` to `7`). In `{cleanepi}` the function `convert_to_numeric()` does such conversion as illustrated in the below code chunk.
 
@@ -299,11 +299,11 @@ At this time, this operation does *not* result in an updated `print_report()` ou
 
 🧠 **Question**: What steps could you take to check which values were changed?
 
-## Epidemiology related operations
+## Epidemiology Related Operations
 
 In addition to general purpose cleaning, the `{cleanepi}` package also has functions tailored to outbreak and epidemic data. This section covers some of these specialized tasks.
 
-### Checking sequence of dated-events
+### Checking sequence of Dated-Events
 
 Ensuring the correct order and sequence of dated events is crucial in epidemiological data analysis, especially when analyzing infectious diseases where the timing of events like symptom onset and sample collection is essential. The `{cleanepi}` package provides a helpful function called `check_date_sequence()` precisely for this purpose.
 
@@ -326,7 +326,7 @@ sim_ebola_data <- cleanepi::check_date_sequence(
 cleanepi::print_report(sim_ebola_data)
 ```
 
-### Dictionary-based substitution
+### Dictionary-based Substitution
 
 For columns with a code-based entry, such as the “gender” column in our simulated Ebola dataset, it is typically necessary to have specific values or factors when doing, for example, regressions. However, it's also common for unexpected or erroneous values to appear in these columns, which need to be replaced with appropriate values. The `{cleanepi}` package offers support for dictionary-based substitution, a method that allows you to replace values in specific columns based on mappings defined in a dictionary. This approach ensures consistency and accuracy in data cleaning.
 
@@ -374,7 +374,7 @@ new_dictionary
 
 You can read more details in the section about "Dictionary-based data substituting" in the package ["Get started" vignette](https://epiverse-trace.github.io/cleanepi/articles/cleanepi.html#dictionary-based-data-substituting).
 
-### Calculating time span between different date events
+### Calculating Time Span Between Different Date Events
 
 In epidemiological data analysis, it is also useful to track and analyze time-dependent events, such as the progression of a disease outbreak (i.e., the time difference between today and the first case reported) or the duration between sample collection and analysis (i.e., the time difference between today and the sample collection). The most common example is to calculate the age of all the subjects given their date of birth (i.e., the time difference between today and the date of birth).
 
@@ -397,7 +397,7 @@ sim_ebola_data |>
 
 After executing the function `cleanepi::timespan()`, two new columns named `years_since_collection` and `remainder_months` are added to the **sim_ebola_data** dataset, containing the calculated time elapsed since the date of sample collection for each case, measured in years, and the remaining time measured in months.
 
-## Multiple operations at once
+## Multiple Operations at Once
 
 As you are developing the cleaning regimen, you will typically have a step at a time (as shown in the above series of chunks). However, if you do not consolidate these steps as you work through them, you run the risk errors - running steps out of order, forgetting a step, etc. To consolidate as you work, you can combine multiple data cleaning tasks via the pipe operator in `|>`, as shown in the below code snippet.
 
@@ -459,7 +459,7 @@ cleaned_data <- rio::import(
 cleaned_data
 ```
 
-## Creating a linelist and tagging elements
+## Creating a Linelist and Tagging Elements
 
 Once the data is loaded and cleaned, we convert the cleaned case data into a `linelist` object using `{linelist}` package, as in the below code chunk.
 
@@ -543,7 +543,7 @@ linelist::tags_df(linelist_data)
 
 This provides a convenient way to ensure downstream analysis only uses tagged columns in downstream analysis.
 
-## When should I use `{linelist}`?
+## When Should I Use `{linelist}`?
 
 Data analysis during an outbreak response demands a different set of "data safeguards" when compared to usual research situations. Notably, there is a continuous stream of data, and likely a changing observational standard.
 
@@ -630,7 +630,7 @@ daily_incidence_2 <- incidence2::incidence(
 )
 ```
 
-## Epi-curve plots
+## Epi-curve Plots
 
 The `incidence2` object can be visualized using the generic `plot()` function (though it will be a `ggplot2` object, for advanced users that want to use it in `ggplot2` ecosystem). The resulting graph is referred to as an epidemic curve, or epi-curve for short. The following code snippets generate epi-curves for the `daily_incidence` and `weekly_incidence` incidence objects created above.
 
@@ -654,7 +654,7 @@ plot(weekly_incidence) +
   tracetheme::theme_trace() # Apply the custom trace theme
 ```
 
-## Curve of cumulative cases
+## Curve of Cumulative Cases
 
 The cumulative number of cases can be calculated using the `cumulate()` function from an `incidence2` object and visualized, as in the example below.
 
@@ -669,7 +669,7 @@ The cumulative number of cases can be calculated using the `cumulate()` function
 
 Note that this function preserves grouping, i.e., if the `incidence2` object contains groups, it will accumulate the cases accordingly.
 
-## Peak estimation
+## Peak Estimation
 
 You can estimate the peak -- the time with the highest number of recorded cases-- using the `estimate_peak()` function from the `{incidence2}` package. This function employs a bootstrapping method to determine the peak time (i.e. by resampling dates with replacement, resulting in a distribution of estimated peak times).
 
@@ -689,7 +689,7 @@ print(peak)
 
 This example demonstrates how to estimate the peak time using the `estimate_peak()` function at $95%$ confidence interval and using 100 bootstrap samples.
 
-## Advanced Plotting with ggplot2
+## Advanced Plotting with `{ggplot2}`
 
 `{incidence2}` produces basic plots for epicurves, but additional work is required to create well-annotated graphs. However, using the `{ggplot2}` package, you can generate more sophisticated and epicurves with more flexibility in annotation. `{ggplot2}` is a comprehensive package that provides many plot types. However, we will focus on three key elements for producing epicurves: histogram plots, scaling date axes and their labels, and general plot theme annotation. The example below demonstrates how to configure these three elements for a simple `{incidence2}` object.
 
@@ -780,7 +780,7 @@ ggplot2::ggplot(data = daily_incidence_2) +
 
 Exploraty analysis and visualizations are useful, but ultimately may not be sufficiently quantitative for public health operational needs. Understanding trends in surveillance data is crucial for understanding epidemic drivers and dynamics. This may include forecasting disease burden, planning future public health interventions, and assessing the effectiveness of past control measures. By analyzing trends, policymakers and public health experts can make informed decisions to mitigate the spread of diseases and protect public health.
 
-## Simple model
+## Simple Model
 
 Aggregated case data over specific time units (i.e. incidence data), typically represent the number of cases that occur within that time frame. We can think of these cases as noisy observations generated by the underlying epidemic process (which we cannot directly observe). To account for randomness in the observations, we can assume that observed cases follow either `Poisson distribution` (if cases are reported at a constant average rate over time) or a `negative binomial (NB) distribution` (if there is potential variability in reporting over time). When analyzing such data, one common approach is to examine the trend over time by computing the rate of change, which can indicate whether there is exponential growth or decay in the number of cases. Exponential growth implies that the number of cases is increasing at an accelerating rate over time, while exponential decay suggests that the number of cases is decreasing at a decelerating rate.
 
@@ -822,7 +822,7 @@ plot(fitted_curve_nb, angle = 45) +
   ggplot2::labs(x = "Date", y = "Cases")
 ```
 
-## Exponential growth or decay rate
+## Exponential Growth or Decay Rate
 
 The exponential growth or decay rate, denoted as $r$, serves as an indicator for the trend in cases, indicating whether they are increasing (growth) or decreasing (decay) on an exponential scale. This rate is computed using the so-called **renewal equation** [(Wallinga et al. 2006)](https://royalsocietypublishing.org/doi/10.1098/rspb.2006.3754), which mechanistically links the reproductive number $R$ of new cases (i.e. the average number of people that a typical case infects) to the generation interval of the disease (i.e. the average delay from one infection to the next in a chain of transmission). This computational method is implemented in the `{i2extras}` package.
 
@@ -835,7 +835,7 @@ rates_nb <- base::as.data.frame(rates_nb) |>
 base::print(rates_nb)
 ```
 
-## Peak time
+## Peak Time
 
 The **peak time** is the time at which the highest number of cases is observed in the aggregated data. It can be estimated using the `i2extras::estimate_peak()` function as shown in the below code chunk, which identify peak time from the `incidence2` object `df_incid`.
 
@@ -846,7 +846,9 @@ peaks_nb <- i2extras::estimate_peak(df_incid, progress = FALSE) |>
 base::print(peaks_nb)
 ```
 
-## Moving average
+🧠 **Question**: Use the Poisson distribution to model the number of cases in the example above, calculate the growth or decay rate and estimate the peak time? How these estimates differ from those obtained using the negative binomial distribution?
+
+## Moving Average
 
 A moving or rolling average calculates the average number of cases within a specified time period. This can be achieved by utilizing the `add_rolling_average()` function from the `{i2extras}` package on an `incidence2 object`. The following code chunk demonstrates the computation of the weekly average number of cases from the `incidence2` object `df_incid`, followed by visualization.
 
