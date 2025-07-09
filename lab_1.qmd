@@ -16,7 +16,7 @@ In the early stages of an outbreak response, the questions revolve around trying
 
 In this phase, the calculations are computational simple. This reflects sparse data and tolerance for simplifying assumptions that tend to be risk-averse. However, there is often relatively complex work in this phase surrounding collecting and curating data into useful streams for analysis.
 
-In this session, we introduce several tools for working with common data you might see early in outbreak. You will practice with these tools to create a clean data stream, which you then use in analyses tailored to assessing overall threat from a pathogen, like epidemic growth rate and reproductive number, case fatality ratios, and other measures.
+In this session, we introduce several tools for working with common data you might see early in outbreak. You will practice with these tools to create a clean data stream, which you then use in analyses tailored to assessing overall threat from a pathogen, like epidemic growth rate and reproductive number, case fatality risks, and other measures.
 
 Throughout the session, when you see `{somepackage}` that indicates an `R` package. In code blocks, we will also tend to use the syntax `somepackage::somefunction()` when using a function from a package rather than standard `R`. While this syntax is unnecessary if you have already loaded a package with `library(somepackage)`, for learning purposes it highlights where functions come from.
 
