@@ -391,6 +391,27 @@ plot(incubation_period_variable + reporting_delay_variable)
 
 Aside: if data are available on the time between symptom onset and reporting, we can use the function `estimate_delay()` to estimate a log normal distribution from a vector of delays. The code below illustrates how to use `estimate_delay()` with synthetic delay data. 
 
+Suppose we collected onset-to-report delay data from 100 cases during an ongoing epidemic. The frequency of these delays, measured in days, is as follows:
+```{r}
+delays <- rlnorm(100, log(4), 1)
+hist(delays, breaks = 10,
+     col = "lightgreen",
+     main = "Histogram of Delays",
+     xlab = "Delay (days)",
+     ylab = "Frequency"
+     )
+```
+We can now estimate the probability distribution of these delays to better understand their underlying pattern as follows:
+```{r}
+#| message: false
+#| warning: false
+onset_to_report <-EpiNow2::estimate_delay(delays,
+                                  samples = 1000, 
+                                  bootstraps = 2)
+plot(onset_to_report)
+print(onset_to_report$parameters)
+```
+
 ###  Generation Time
 
 We also must specify a distribution for the generation time. Here we will use a log normal distribution with mean 3.6 and standard deviation 3.1 ([Ganyani et al. 2020](https://doi.org/10.2807/1560-7917.ES.2020.25.17.2000257)).
