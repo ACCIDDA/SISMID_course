@@ -4,3 +4,6 @@
 .Ruserdata
 data/*.rds
 *.html
+*_egsoln.R
+data/cleaned_data.csv
+*.Rproj
