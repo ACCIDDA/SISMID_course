@@ -27,7 +27,7 @@ library(epiparameter)
 library(tidyverse)
 ```
 
-# Getting distributions
+# Getting Distributions
 
 If we want to estimate the transmissibility of an infection, it's common to use a package such as `{EpiEstim}` or `{EpiNow2}`. The `{EpiEstim}` package allows real-time estimation of the reproduction number using case data over time, reflecting how transmission changes based on when symptoms appear. For estimating transmission based on when people were actually infected (rather than symptom onset), the `{EpiNow2}` package extends this idea by combining it with a model that accounts for delays in observed data. Both packages require some epidemiological information as an input. For example, in `{EpiNow2}` we use `EpiNow2::Gamma()` to specify a generation time as a probability distribution adding its `mean`, standard deviation (`sd`), and maximum value (`max`). 
 
@@ -56,7 +56,7 @@ In the library of epidemiological parameters, we may not have a `"generation"` t
 
 Aside: The [`{epireview}` R package](https://mrc-ide.github.io/epireview/) has parameters on Ebola, Marburg and Lassa from recent systematic reviews, with more priority pathogens planned for future releases. Have a look at [this vignette](https://epiverse-trace.github.io/epiparameter/articles/data_from_epireview.html) for more information on how to use these parameters with `{epiparameter}`.
 
-## Generation time vs serial interval
+## Generation Time vs Serial Interval
 
 The generation time, jointly with the reproduction number ($R$), can provide valuable insights into the likely growth rate of the epidemic, and hence inform the implementation of control measures. The larger the value of $R$ and/or the shorter the generation time, the more new infections that we would expect per day, and hence the faster the incidence of disease cases will grow.
 
@@ -68,7 +68,7 @@ In calculating the effective reproduction number ($R_{t}$), the *generation time
 
 However, using the *serial interval* as an approximation of the *generation time* is most appropriate for diseases in which infectiousness starts after symptom onset ([Chung Lau et al., 2021](https://academic.oup.com/jid/article/224/10/1664/6356465)). In cases where infectiousness starts before symptom onset, the serial intervals can have negative values, which occurs when the infectee develops symptoms before the infector in a transmission pair ([Nishiura et al., 2020](https://www.ijidonline.com/article/S1201-9712(20)30119-3/fulltext#gr2)).
 
-## From mean delays to probability distributions
+## From Mean Delays to Probability Distributions
 
 If we measure the *serial interval* in real data, we typically see that not all case pairs have the same delay from onset-to-onset. We can observe this variability for other key epidemiological delays as well, including the incubation period and infectious period.
 
@@ -104,7 +104,7 @@ Table: Serial interval estimates using Gamma, Weibull, and Log Normal distributi
 
 ![Serial interval of novel coronavirus (COVID-19) infections overlaid with a published distribution of SARS. ([Nishiura et al., 2020](https://www.ijidonline.com/article/S1201-9712(20)30119-3/fulltext))](fig/serial-interval-covid-sars.jpg)
 
-## Choosing epidemiological parameters
+## Choosing Epidemiological Parameters
 
 In this section, we will use `{epiparameter}` to obtain the serial interval for COVID-19, as an alternative to the generation time.
 
@@ -164,7 +164,7 @@ distribution |>
   is_parameterised()
 ```
 
-### Parameterised entries have an Inference method
+### Parameterised Entries Have an Inference Method
 
 As detailed in `?is_parameterised`, a parameterised distribution is the entry that has a probability distribution associated with it provided by an `inference_method` as shown in `metadata`:
 
@@ -174,7 +174,7 @@ distribution[[2]]$metadata$inference_method
 distribution[[4]]$metadata$inference_method
 ```
 
-## Select a single distribution
+## Select a Single Distribution
 
 The `epiparameter::epiparameter_db()` function works as a filtering or subset function. We can use the `author` argument to keep `Hiroshi Nishiura` parameters, or the `subset` argument to keep parameters from studies with a sample size higher than 10:
 
@@ -215,7 +215,7 @@ With the `xlim` argument, you can change the length or number of days in the `x`
 plot(covid_serialint, xlim = c(1, 60))
 ```
 
-## Extract the summary statistics
+## Extract the Summary Statistics
 
 We can get the `mean` and standard deviation (`sd`) from this `<epiparameter>` diving into the `summary_stats` object:
 
@@ -255,7 +255,7 @@ library(tidyverse)
 
 Aside: `{EpiNow2}` uses a Bayesian inference framework to estimate reproduction numbers and infection times based on reporting dates. That means it estimates transmission based on when people were actually infected, by accounting for delays in observed data. In contrast, the `{EpiEstim}` package estimates reproduction number using only case data over time, which is faster but may not capture important trends and thus fail to forecast as well. 
 
-## Case data
+## Case Data
 
 To illustrate the functions of `EpiNow2` we will use outbreak data of the start of the COVID-19 pandemic from the United Kingdom. The data are available in the R package `{incidence2}`. 
 
@@ -302,17 +302,17 @@ cases |>
   )
 ```
 
-## Delay distributions 
+## Delay Distributions 
 
 As discussed earlier, we will need to use event delay distributions. We know there are delays from the time of infection until the time a case is reported. We assume these delays as distributions to account for the uncertainty in individual level differences. The delay may involve multiple types of processes. A typical delay from time of infection to case reporting may consist of: **time from infection to symptom onset** (the incubation period) + **time from symptom onset to case notification** (the reporting time).
 
 The delay distribution for each of these processes can either estimated from data or obtained from the literature. We can express uncertainty about what the correct parameters of the distributions by assuming the distributions have **fixed** parameters or whether they have **variable** parameters. To understand the difference between **fixed** and **variable** distributions, let's consider the incubation period. 
 
-### Incubation period distribution 
+### Incubation Period Distribution 
 
 The distribution of incubation period for many diseases can usually be obtained from the literature. The package `{epiparameter}` contains a library of epidemiological parameters for different diseases obtained from the literature. 
 
-We specify a (fixed) gamma distribution with mean $\mu = 4$ and standard deviation $\sigma = 2$ (shape = $4$, scale = $1$) using the function `Gamma()` as follows:
+We specify a (fixed) Gamma distribution with mean $\mu = 4$ and standard deviation $\sigma = 2$ (shape = $4$, scale = $1$) using the function `Gamma()` as follows:
 
 ```{r}
 incubation_period_fixed <- EpiNow2::Gamma(
@@ -326,7 +326,7 @@ incubation_period_fixed
 
 The argument `max` is the maximum value the distribution can take; in this example, 20 days. 
 
-###  Including distribution uncertainty
+###  Including Distribution Uncertainty
 
 To specify a **variable** distribution, we include uncertainty around the mean $\mu$ and standard deviation $\sigma$ of our gamma distribution. If our incubation period distribution has a mean $\mu$ and standard deviation $\sigma$, then we assume the mean ($\mu$) follows a Normal distribution with standard deviation $\sigma_{\mu}$:
 
@@ -349,7 +349,7 @@ incubation_period_variable
 ```
 
 
-###  Reporting delays
+###  Reporting Delays
 
 After the incubation period, there will be an additional delay of time from symptom onset to case notification: the reporting delay. We can specify this as a fixed or variable distribution, or estimate a distribution from data. 
 
@@ -391,7 +391,7 @@ plot(incubation_period_variable + reporting_delay_variable)
 
 Aside: if data are available on the time between symptom onset and reporting, we can use the function `estimate_delay()` to estimate a log normal distribution from a vector of delays. The code below illustrates how to use `estimate_delay()` with synthetic delay data. 
 
-###  Generation time
+###  Generation Time
 
 We also must specify a distribution for the generation time. Here we will use a log normal distribution with mean 3.6 and standard deviation 3.1 ([Ganyani et al. 2020](https://doi.org/10.2807/1560-7917.ES.2020.25.17.2000257)).
 
@@ -480,7 +480,7 @@ As these estimates are based on partial data, they have a wide uncertainty inter
 
 + The doubling time (the time taken for case numbers to double) is `r summary(estimates)$estimate[summary(estimates)$measure=="Doubling/halving time (days)"]`.
 
-# Other Key Estimates: Case Fatality Ratio
+# Other Key Estimates: Case Fatality Risk
 
 Common questions in early days of an epidemic include:
 
@@ -490,7 +490,7 @@ Common questions in early days of an epidemic include:
 
 We can assess the pandemic potential of an epidemic with two critical measurements: the transmissibility and the clinical severity ([Fraser et al., 2009](https://www.science.org/doi/full/10.1126/science.1176062), [CDC, 2016](https://www.cdc.gov/flu/pandemic-resources/national-strategy/severity-assessment-framework-508.html)).
 
-In the previous section, we learned about estimating transmissibility, now we turn to severity. One epidemiological approach to estimating the clinical severity is quantifying the Case Fatality Ratio (CFR; also sometimes called "risk" rather than "ratio"). CFR is the conditional probability of death given confirmed diagnosis, calculated as the ratio of the cumulative number of deaths from an infectious disease to the number of confirmed diagnosed cases. However, calculating this directly during the course of an epidemic tends to result in a naive or biased CFR given the time delay from onset to death, varying substantially as the epidemic progresses and stabilising at the later stages of the outbreak ([Ghani et al., 2005](https://academic.oup.com/aje/article/162/5/479/82647?login=false#620743)).
+In the previous section, we learned about estimating transmissibility, now we turn to severity. One epidemiological approach to estimating the clinical severity is quantifying the Case Fatality Risk (CFR; also sometimes called "ratio" rather than "risk"). CFR is the conditional probability of death given confirmed diagnosis, calculated as the ratio of the cumulative number of deaths from an infectious disease to the number of confirmed diagnosed cases. However, calculating this directly during the course of an epidemic tends to result in a naive or biased CFR given the time delay from onset to death, varying substantially as the epidemic progresses and stabilising at the later stages of the outbreak ([Ghani et al., 2005](https://academic.oup.com/aje/article/162/5/479/82647?login=false#620743)).
 
 ![Observed biased confirmed case fatality risk (CFR) estimates as a function of time (thick line) calculated as the cumulative number of deaths over confirmed cases at time t. The estimate at the end of an outbreak (~May 30) is the realised CFR by the end of the epidemic. The horizontal continuous line and dotted lines show the expected value and the 95% confidence intervals ($95\%$ CI) of the predicted delay-adjusted CFR estimate only by using the observed data until 27 Mar 2003 ([Nishiura et al., 2009](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0006852))](fig/cfr-pone.0006852.g003-fig_c.png){alt='The periods are relevant: Period 1 -- 15 days where CFR is zero to indicate this is due to no reported deaths; Period from Mar 15 -- Apr 26 where CFR appears to be rising; Period Apr 30 -- May 30 where the CFR estimate stabilises.'}
 
@@ -505,7 +505,7 @@ In this section we are going to learn how to use the `{cfr}` package to calculat
 library(cfr)
 ```
 
-## Data sources for clinical severity
+## Data Sources for Clinical Severity
 
 What data sources can we use to estimate the clinical severity of a disease outbreak? [Verity et al., 2020](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30243-7/fulltext) summarizes the spectrum of COVID-19 cases:
 
