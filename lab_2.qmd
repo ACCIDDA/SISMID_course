@@ -710,7 +710,7 @@ Based on the figure above:
 
 Suppose we need to assess the clinical severity of the epidemic in a context different from surveillance data, like the severity among cases that arrive at hospitals or cases you collected from a representative serological survey. 
 
-Using `{cfr}`, we can change the inputs for the numerator (`cases`) and denominator (`deaths`) to estimate more severity measures like the Infection fatality risk (IFR) or the Hospitalisation Fatality Risk (HFR). We can follow this analogy:
+Using `{cfr}`, we can change the inputs for the numerator (`deaths`) and denominator (`cases`) to estimate more severity measures like the Infection fatality risk (IFR) or the Hospitalisation Fatality Risk (HFR). We can follow this analogy:
 
 If for a _Case_ fatality risk (CFR), we require: 
 
