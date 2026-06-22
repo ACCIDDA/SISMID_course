@@ -48,6 +48,6 @@ If you are having issues with installation, please post in the Canvas Discussion
 
 This two-part lab focuses on outbreak reconstruction using the `outbreaker2` package.
 
-## Lab 3: Introduction and the Early Outbreak Phase
+## Lab 3: The Early Outbreak Phase
 
 ## Lab 4: The Intermediate Outbreak Phase
