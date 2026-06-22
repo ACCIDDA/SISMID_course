@@ -1,5 +1,5 @@
 
-# 1. load the raw_ebola_data, as in lab_1.qmd
+# 1. load the raw_ebola_data, as in lab_3.qmd
 
 raw_ebola_data <- here::here("data", "simulated_ebola.csv") |>
   rio::import() |>

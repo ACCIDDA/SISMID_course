@@ -1,5 +1,5 @@
 
-# 1. load the ebola1976 data from the `{cfr}` package, as in lab_2.qmd, but redefine cases column as `primary` and deaths column as `secondary`.
+# 1. load the ebola1976 data from the `{cfr}` package, as in lab_4.qmd, but redefine cases column as `primary` and deaths column as `secondary`.
 
 
 

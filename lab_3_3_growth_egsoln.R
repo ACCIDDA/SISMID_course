@@ -1,5 +1,5 @@
 
-# 1. load the UK covid data, as in lab_1.qmd, but this time do not filter it by date
+# 1. load the UK covid data, as in lab_3.qmd, but this time do not filter it by date
 
 covid19_eng_case_data <- outbreaks::covid19_england_nhscalls_2020
 

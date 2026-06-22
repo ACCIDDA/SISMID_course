@@ -44,10 +44,10 @@ If you are having issues with installation, please post in the Canvas Discussion
 
 # Labs!
 
-## Lab 1: Introduction and the Early Outbreak Phase
-
-## Lab 2: The Intermediate Outbreak Phase
-
-## Lab 3 & 4: A Specific Application in the Late Phase: `outbreaker2`
+## Lab 1 & 2: A Specific Application in the Late Phase: `outbreaker2`
 
 This two-part lab focuses on outbreak reconstruction using the `outbreaker2` package.
+
+## Lab 3: Introduction and the Early Outbreak Phase
+
+## Lab 4: The Intermediate Outbreak Phase
