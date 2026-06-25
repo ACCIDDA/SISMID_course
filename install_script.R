@@ -45,3 +45,5 @@ install.packages(
   repos = NULL,
   type = "source"
 )
+# i2extras
+remotes::install_github("reconverse/i2extras", build_vignettes = TRUE)
